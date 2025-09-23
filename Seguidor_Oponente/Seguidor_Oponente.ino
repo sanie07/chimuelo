@@ -52,9 +52,9 @@ int delay_90grados = 21;
 int delay_180grados = delay_90grados*2;
 
 // Velocidades:
-int fast_speed = 150;   // velocidad para el frente
-int mean_speed = 80;    // velocidad promedio de busqueda
-int var_speed = 30;     // velocidad variable de busqueda
+int fast_speed = 40;   // velocidad para el frente
+int mean_speed = 30;    // velocidad promedio de busqueda
+int var_speed = 10;     // velocidad variable de busqueda
 
 
 ///////////////////////////////  FUNCIONES  ////////////////////////////////
@@ -141,7 +141,7 @@ void loop() {
       }
       // No se encuentra ni en frente ni en los costados
       else{
-        Giro_180grados();
+        xmotion.StopMotors(1);
       }
     }
   }
@@ -149,7 +149,7 @@ void loop() {
 
 // Funcion para cuando es: Centro.
 void Frente_rapido(){
-  xmotion.MotorControl(-fast_speed, -fast_speed);
+  xmotion.MotorControl(fast_speed, fast_speed);
 }
 
 // Funcion para cuando es: Derecha-diagonal o Derecha-centrada
@@ -157,7 +157,7 @@ void Giro_derecha(int num_prop){
   int speed = num_prop*var_speed;
   int left_speed = mean_speed + speed;
   int rigth_speed = mean_speed - speed;
-  xmotion.MotorControl(-left_speed, -rigth_speed);
+  xmotion.MotorControl(left_speed, rigth_speed);
 }
 
 // Funcion para cuando es: Izquierda-diagonal o Izquierda-centrada
@@ -165,21 +165,21 @@ void Giro_izquierda(int num_prop){
   int speed = num_prop*var_speed;
   int left_speed = mean_speed - speed;
   int rigth_speed = mean_speed + speed;
-  xmotion.MotorControl(-left_speed, -rigth_speed);
+  xmotion.MotorControl(left_speed, rigth_speed);
 }
 
 // Funcion para cuando es: Derecha
 void Giro_90grados_derecha(){
-  xmotion.Left0(100, delay_90grados);
+  xmotion.Right0(40, delay_90grados);
 }
 
 // Funcion para cuando es: Izquierda
 void Giro_90grados_izquierda(){
-  xmotion.Right0(100, delay_90grados);
+  xmotion.Left0(40, delay_90grados);
 }
 
 // Funcion para cuando ningun sensor detecta
 void Giro_180grados(){
-  xmotion.Left0(100, delay_180grados);
+  xmotion.Right0(40, delay_180grados);
 }
 
