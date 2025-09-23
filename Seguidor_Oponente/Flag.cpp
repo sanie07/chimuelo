@@ -9,6 +9,7 @@ Flag::Flag(byte Pin) {
 // Metodo begin (inicializa el pin de la bandera)
 void Flag::begin() {
     pinMode(_pin, OUTPUT); // Configura el PIN como salida
+    digitalWrite(_pin, LOW);
 }
 
 // Metodo matador (abre la bandera)

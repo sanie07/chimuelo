@@ -51,28 +51,33 @@ int delay_180grados = delay_90grados*2;
 
 
 ///////////////////////////////  FUNCIONES  ////////////////////////////////
-void Frente_busqueda(int delay);
-void Frente_rapido(int delay);
-void Giro_90grados_derecha(int delay_90grados);
-void Giro_90grados_izquierda(int delay_90grados);
-void Giro_180grados(int delay_180grados);
-void Giro_derecha()
+void Frente_rapido();
+void Giro_derecha();
+void Giro_izquierda();
+void Giro_90grados_derecha(int tiempo_90grados);
+void Giro_90grados_izquierda(int tiempo_90grados);
+void Giro_180grados(int tiempo_180grados);
+
 
 
 void setup() {
   //////////////////////////  INICIALIZAMOS LOS PINES  //////////////////////////
   // Bandera:
-  pinMode(flag, OUTPUT);
-  digitalWrite(flag, LOW);
+  flag.begin();
 
-  // Sensor Oponente:
-  for(int i=0;i<5;i++){
-    pinMode(OS[i], INPUT);
-  }
+  // Sensores Oponente:
+  L_OS.begin();
+  LD_OS.begin();
+  C_OS.begin();
+  RD_OS.begin();
+  R_OS.begin();
 
-  // Sensor de Linea:
-  pinMode(L_LS, INPUT);
-  pinMode(R_LS, INPUT);
+  // Sensores de Linea:
+  L_LS.begin();
+  R_LS.begin();
+
+  // Sensor MicroStart:
+  MS.begin();
 
   // LEDs:
   pinMode(UserLed1, OUTPUT);
@@ -88,19 +93,37 @@ void setup() {
 }
 
 void loop() {
-  // Leemos los sensores:
-  lectura_L_OS = digitalRead()
-  if()
-
-
-
-
-
-
-
-
-
-
-
-
+  while(MS.get_start()){
+    // Leemos los sensores:
+    bool Read_OS[] = {L_OS.lectura(), LD_OS.lectura(), C_OS.lectura(), RD_OS.lectura(), R_OS.lectura()};
+    bool Read_LS[] = {L_LS.lectura(), R_LS.lectura()};
+    
+    // Centro
+    if(!Read_OS[1] && Read_OS[2] && !Read_OS[3]){
+      Frente_rapido();
+    }
+    // Derecha-centrado / Derecha-diagonal
+    else if((!Read_OS[1] && Read_OS[2] && Read_OS[3]) || (!Read_OS[1] && !Read_OS[2] && Read_OS[3])){
+      Giro_derecha();
+    }
+    // Izquierda-centrado / Izquierda-diagonal
+    else if((Read_OS[1] && Read_OS[2] && !Read_OS[3]) || (Read_OS[1] && !Read_OS[2] && !Read_OS[3])){
+      Giro_izquierda();
+    }
+    // No se encuentra en frente
+    else if((!Read_OS[1] && !Read_OS[2] && !Read_OS[3])){
+      // Derecha
+      if(Read_OS[4]){
+        Giro_90grados_derecha(delay_90grados);
+      }
+      // Izquierda
+      else if(Read_OS[0]){
+        Giro_90grados_izquierda(delay_90grados);
+      }
+      // No se encuentra ni en frente ni en los costados
+      else{
+        Giro_180grados(delay_180grados);
+      }
+    }
+  }
 }
