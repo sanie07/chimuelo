@@ -15,17 +15,18 @@ Flag flag = Flag(pin_flag);
 const int pin_L_OS = 0;
 OS L_OS = OS(pin_L_OS);
 // Izquierda-Diagonal:
-const int pin_L_OS = 2;
-OS L_OS = OS(pin_L_OS);
+const int pin_LD_OS = 2;
+OS LD_OS = OS(pin_LD_OS);
 // Centro:
-const int pin_L_OS = A5;
-OS L_OS = OS(pin_L_OS);
+const int pin_C_OS = A5;
+OS C_OS = OS(pin_C_OS);
 // Derecha-Diagonal:
-const int pin_L_OS = A4;
-OS L_OS = OS(pin_L_OS);
+const int pin_RD_OS = A4;
+OS RD_OS = OS(pin_RD_OS);
 // Derecha:
-const int pin_L_OS = A1;
-OS L_OS = OS(pin_L_OS);
+const int pin_R_OS = A1;
+OS R_OS = OS(pin_R_OS);
+
 
 // Sensores de Linea:
 // Izquierda:
@@ -122,15 +123,15 @@ void loop() {
     else if((!Read_OS[1] && !Read_OS[2] && !Read_OS[3])){
       // Derecha
       if(Read_OS[4]){
-        Giro_90grados_derecha(delay_90grados);
+        Giro_90grados_derecha();
       }
       // Izquierda
       else if(Read_OS[0]){
-        Giro_90grados_izquierda(delay_90grados);
+        Giro_90grados_izquierda();
       }
       // No se encuentra ni en frente ni en los costados
       else{
-        Giro_180grados(delay_180grados);
+        Giro_180grados();
       }
     }
   }
@@ -164,7 +165,7 @@ void Giro_90grados_derecha(){
 
 // Funcion para cuando es: Izquierda
 void Giro_90grados_izquierda(){
-  xmotion.Rigth0(100, delay_90grados);
+  xmotion.Right0(100, delay_90grados);
 }
 
 // Funcion para cuando ningun sensor detecta

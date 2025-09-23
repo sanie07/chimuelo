@@ -14,7 +14,7 @@ void Flag::begin() {
 
 // Metodo matador (abre la bandera)
 void Flag::matador(){
-    if(!Flag::_abierto){
+    if(!_abierto){
         digitalWrite(_pin, HIGH);
         delay(100);
         digitalWrite(_pin, LOW);
@@ -24,5 +24,5 @@ void Flag::matador(){
 
 // Metodo get_abierto (devuelve el estado de la bandera)
 bool Flag::get_abierto(){
-    return Flag::_abierto;
+    return _abierto;
 }

@@ -13,6 +13,6 @@ void LS::begin() {
 
 // Metodo lectura (lee el sensor y devuelve su estado)
 bool LS::lectura(){
-    LS::_estado = digitalRead(_pin);
+    _estado = digitalRead(_pin);
     return _estado;
 }

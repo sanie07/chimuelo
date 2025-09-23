@@ -13,5 +13,6 @@ void MicroStart::begin() {
 
 // Metodo lectura (lee el sensor y devuelve su estado)
 bool MicroStart::get_start(){
+    _start = digitalRead(_pin);
     return _start;
 }
