@@ -107,26 +107,36 @@ void loop() {
     
     // Centro
     if(!Read_OS[1] && Read_OS[2] && !Read_OS[3]){
+      digitalWrite(UserLed1, HIGH);
+      digitalWrite(UserLed2, HIGH);
       Frente_rapido();
     }
     // Derecha-centrado / Derecha-diagonal
     else if((!Read_OS[1] && Read_OS[2] && Read_OS[3]) || (!Read_OS[1] && !Read_OS[2] && Read_OS[3])){
-      int num_prop = int(Read_OS[2]) + int(Read_OS[3]);
+      int num_prop = 3-(int(Read_OS[2]) + int(Read_OS[3]));
+      digitalWrite(UserLed1, HIGH);
+      digitalWrite(UserLed2, LOW);
       Giro_derecha(num_prop);
     }
     // Izquierda-centrado / Izquierda-diagonal
     else if((Read_OS[1] && Read_OS[2] && !Read_OS[3]) || (Read_OS[1] && !Read_OS[2] && !Read_OS[3])){
-      int num_prop = int(Read_OS[2]) + int(Read_OS[1]);
+      int num_prop = 3-(int(Read_OS[2]) + int(Read_OS[1]));
+      digitalWrite(UserLed1, LOW);
+      digitalWrite(UserLed2, HIGH);
       Giro_izquierda(num_prop);
     }
     // No se encuentra en frente
     else if((!Read_OS[1] && !Read_OS[2] && !Read_OS[3])){
       // Derecha
       if(Read_OS[4]){
+        digitalWrite(UserLed1, HIGH);
+        digitalWrite(UserLed2, LOW);
         Giro_90grados_derecha();
       }
       // Izquierda
       else if(Read_OS[0]){
+        digitalWrite(UserLed1, LOW);
+        digitalWrite(UserLed2, HIGH);
         Giro_90grados_izquierda();
       }
       // No se encuentra ni en frente ni en los costados
