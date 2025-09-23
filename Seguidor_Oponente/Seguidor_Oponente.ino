@@ -45,18 +45,24 @@ const int UserLed2 = 8;
 
 
 //////////////////////////  VARIABLES AUXILIARES  //////////////////////////
-// Motores:
-int delay_90grados = 23;
+//// Motores:
+// Giro:
+int delay_90grados = 21;
 int delay_180grados = delay_90grados*2;
+
+// Velocidades:
+int fast_speed = 150;   // velocidad para el frente
+int mean_speed = 80;    // velocidad promedio de busqueda
+int var_speed = 30;     // velocidad variable de busqueda
 
 
 ///////////////////////////////  FUNCIONES  ////////////////////////////////
 void Frente_rapido();
-void Giro_derecha();
-void Giro_izquierda();
-void Giro_90grados_derecha(int tiempo_90grados);
-void Giro_90grados_izquierda(int tiempo_90grados);
-void Giro_180grados(int tiempo_180grados);
+void Giro_derecha(int num_prop);
+void Giro_izquierda(int num_prop);
+void Giro_90grados_derecha();
+void Giro_90grados_izquierda();
+void Giro_180grados();
 
 
 
@@ -104,11 +110,13 @@ void loop() {
     }
     // Derecha-centrado / Derecha-diagonal
     else if((!Read_OS[1] && Read_OS[2] && Read_OS[3]) || (!Read_OS[1] && !Read_OS[2] && Read_OS[3])){
-      Giro_derecha();
+      int num_prop = int(Read_OS[2]) + int(Read_OS[3]);
+      Giro_derecha(num_prop);
     }
     // Izquierda-centrado / Izquierda-diagonal
     else if((Read_OS[1] && Read_OS[2] && !Read_OS[3]) || (Read_OS[1] && !Read_OS[2] && !Read_OS[3])){
-      Giro_izquierda();
+      int num_prop = int(Read_OS[2]) + int(Read_OS[1]);
+      Giro_izquierda(num_prop);
     }
     // No se encuentra en frente
     else if((!Read_OS[1] && !Read_OS[2] && !Read_OS[3])){
@@ -127,3 +135,40 @@ void loop() {
     }
   }
 }
+
+// Funcion para cuando es: Centro.
+void Frente_rapido(){
+  xmotion.MotorControl(-fast_speed, -fast_speed);
+}
+
+// Funcion para cuando es: Derecha-diagonal o Derecha-centrada
+void Giro_derecha(int num_prop){
+  int speed = num_prop*var_speed;
+  int left_speed = mean_speed + speed;
+  int rigth_speed = mean_speed - speed;
+  xmotion.MotorControl(-left_speed, -rigth_speed);
+}
+
+// Funcion para cuando es: Izquierda-diagonal o Izquierda-centrada
+void Giro_izquierda(int num_prop){
+  int speed = num_prop*var_speed;
+  int left_speed = mean_speed - speed;
+  int rigth_speed = mean_speed + speed;
+  xmotion.MotorControl(-left_speed, -rigth_speed);
+}
+
+// Funcion para cuando es: Derecha
+void Giro_90grados_derecha(){
+  xmotion.Left0(100, delay_90grados);
+}
+
+// Funcion para cuando es: Izquierda
+void Giro_90grados_izquierda(){
+  xmotion.Rigth0(100, delay_90grados);
+}
+
+// Funcion para cuando ningun sensor detecta
+void Giro_180grados(){
+  xmotion.Left0(100, delay_180grados);
+}
+
