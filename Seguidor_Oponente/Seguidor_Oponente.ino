@@ -1,23 +1,43 @@
 // Incluimos la libreria del xmotionV3
 #include <xmotionV3.h>
+#include "OS.h"
+#include "LS.h"
+#include "Flag.h"
+#include "MicroStart.h"
 
-//////////////////////////  PINES A SER UTILIZADOS  //////////////////////////
+//////////////////  PINES CON SUS OBJETOS A SER UTILIZADOS  //////////////////
 // Bandera:
-const int flag = 4;
+const int pin_flag = 4;
+Flag flag = Flag(pin_flag);
 
 // Sensores Oponente:
-const int L_OS = 0;
-const int LD_OS = 2;
-const int C_OS = A5;
-const int RD_OS = A4;
-const int R_OS = A1;
+// Izquierda:
+const int pin_L_OS = 0;
+OS L_OS = OS(pin_L_OS);
+// Izquierda-Diagonal:
+const int pin_L_OS = 2;
+OS L_OS = OS(pin_L_OS);
+// Centro:
+const int pin_L_OS = A5;
+OS L_OS = OS(pin_L_OS);
+// Derecha-Diagonal:
+const int pin_L_OS = A4;
+OS L_OS = OS(pin_L_OS);
+// Derecha:
+const int pin_L_OS = A1;
+OS L_OS = OS(pin_L_OS);
 
 // Sensores de Linea:
-const int L_LS = 1; 
-const int R_LS = A2;
+// Izquierda:
+const int pin_L_LS = 1; 
+LS L_LS = LS(pin_L_LS);
+// Derecha:
+const int pin_R_LS = A2;
+LS R_LS = LS(pin_R_LS);
 
 // Sensor de MicroStart:
-const int start = A0;
+const int pin_start = A0;
+MicroStart MS = MicroStart(pin_start);
 
 // LEDs:
 const int UserLed1 = 9;
@@ -25,37 +45,18 @@ const int UserLed2 = 8;
 
 
 //////////////////////////  VARIABLES AUXILIARES  //////////////////////////
-// Bandera:
-int close = 0;
-
-// Sensores Oponente:
-const int OS[] = {L_OS, LD_OS, C_OS, RD_OS, R_OS};
-
-// Sensores de Linea:
-int lectura_L;
-int lectura_R;
-
-// Sensores:
-int lectura_L_OS;
-int lectura_LD_OS;
-int lectura_C_OS;
-int lectura_RD_OS;
-int lectura_R_OS;
-/*int numero_sensores = 7;
-int *read_sensors;*/
-
 // Motores:
 int delay_90grados = 23;
 int delay_180grados = delay_90grados*2;
 
 
-////////////////////////////////  FUNCIONES  ////////////////////////////////
-void lectura(int *read_sensors[], int numero_sensores);
-void Frente_despacio(int delay);
+///////////////////////////////  FUNCIONES  ////////////////////////////////
+void Frente_busqueda(int delay);
 void Frente_rapido(int delay);
 void Giro_90grados_derecha(int delay_90grados);
 void Giro_90grados_izquierda(int delay_90grados);
 void Giro_180grados(int delay_180grados);
+void Giro_derecha()
 
 
 void setup() {
