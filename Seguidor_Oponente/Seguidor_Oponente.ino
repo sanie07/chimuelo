@@ -48,23 +48,46 @@ const int UserLed2 = 8;
 //////////////////////////  VARIABLES AUXILIARES  //////////////////////////
 //// Motores:
 // Giro:
-int delay_90grados = 21;
+int delay_90grados = 19;
 int delay_180grados = delay_90grados*2;
 
 // Velocidades:
-int fast_speed = 40;   // velocidad para el frente
-int mean_speed = 30;    // velocidad promedio de busqueda
-int var_speed = 10;     // velocidad variable de busqueda
+int fast_speed = 65;   // velocidad para el frente
+int mean_speed = 50;   // velocidad promedio de busqueda
+int var_speed = 18;    // velocidad variable de busqueda
+int speed;
+int left_speed;
+int rigth_speed;
+
+// Proporcionalidad:
+float num_prop = 0;
+int prop = 0;
+
+//// Sensor Oponente:
+// Filtro: cantidad de lecturas a promediar
+const int FILTER_N = 3;
+int ant_LD_OS = 0;
+int ant_RD_OS = 0;
 
 
 ///////////////////////////////  FUNCIONES  ////////////////////////////////
 void Frente_rapido();
-void Giro_derecha(int num_prop);
-void Giro_izquierda(int num_prop);
+void Giro_derecha(float num_prop);
+void Giro_izquierda(float num_prop);
 void Giro_90grados_derecha();
 void Giro_90grados_izquierda();
 void Giro_180grados();
 
+// --- NUEVO: función filtro por mayoría ---
+template<typename T>
+bool filtro(T &sensor, int n = FILTER_N){
+  int suma = 0;
+  for(int i=0; i<n; i++){
+    suma += sensor.lectura() ? 1 : 0;
+    delayMicroseconds(200); // opcional, pequeño retardo
+  }
+  return (suma > n/2);
+}
 
 
 void setup() {
@@ -102,49 +125,81 @@ void setup() {
 void loop() {
   while(MS.get_start()){
     // Leemos los sensores:
-    bool Read_OS[] = {L_OS.lectura(), LD_OS.lectura(), C_OS.lectura(), RD_OS.lectura(), R_OS.lectura()};
-    bool Read_LS[] = {L_LS.lectura(), R_LS.lectura()};
-    
+    //bool Read_OS[] = {L_OS.lectura(), LD_OS.lectura(), C_OS.lectura(), RD_OS.lectura(), R_OS.lectura()};
+    //bool Read_LS[] = {L_LS.lectura(), R_LS.lectura()};
+    // Leemos sensores con filtro
+    bool Read_OS[] = {
+      filtro(L_OS), filtro(LD_OS), filtro(C_OS), filtro(RD_OS), filtro(R_OS)
+    };
+    bool Read_LS[] = {
+      filtro(L_LS), filtro(R_LS)
+    };
+
+    // --- PRIORIDAD: línea ---
+    if(Read_LS[0] || Read_LS[1]){
+      // Retrocede y gira 180°
+      xmotion.MotorControl(-fast_speed, -fast_speed);
+      delay(350); // tiempo de retroceso
+      xmotion.StopMotors(1);
+      if(Read_LS[0] && !Read_LS[1]){
+        Giro_90grados_derecha();
+      }
+      else if(!Read_LS[0] && Read_LS[1]){
+        Giro_90grados_izquierda();
+      }
+      else{
+        Giro_180grados();
+      }
+      continue; // vuelve al inicio del loop
+    }
+
     // Centro
-    if(!Read_OS[1] && Read_OS[2] && !Read_OS[3]){
-      digitalWrite(UserLed1, HIGH);
-      digitalWrite(UserLed2, HIGH);
+    if(!Read_OS[1] && Read_OS[2] && !Read_OS[3] || Read_OS[1] && Read_OS[2] && Read_OS[3]){
       Frente_rapido();
     }
     // Derecha-centrado / Derecha-diagonal
     else if((!Read_OS[1] && Read_OS[2] && Read_OS[3]) || (!Read_OS[1] && !Read_OS[2] && Read_OS[3])){
-      int num_prop = 3-(int(Read_OS[2]) + int(Read_OS[3]));
-      digitalWrite(UserLed1, HIGH);
-      digitalWrite(UserLed2, LOW);
+      prop = 3-(int(Read_OS[2]) + int(Read_OS[3]));
+      if(prop == 2){
+        num_prop = 1.5;
+      }
+      else{
+        num_prop = 1;
+      }
       Giro_derecha(num_prop);
     }
     // Izquierda-centrado / Izquierda-diagonal
     else if((Read_OS[1] && Read_OS[2] && !Read_OS[3]) || (Read_OS[1] && !Read_OS[2] && !Read_OS[3])){
-      int num_prop = 3-(int(Read_OS[2]) + int(Read_OS[1]));
-      digitalWrite(UserLed1, LOW);
-      digitalWrite(UserLed2, HIGH);
+      prop = 3-(int(Read_OS[2]) + int(Read_OS[1]));
+      if(prop == 2){
+        num_prop = 1.5;
+      }
+      else{
+        num_prop = 1;
+      }
       Giro_izquierda(num_prop);
     }
     // No se encuentra en frente
     else if((!Read_OS[1] && !Read_OS[2] && !Read_OS[3])){
       // Derecha
       if(Read_OS[4]){
-        digitalWrite(UserLed1, HIGH);
-        digitalWrite(UserLed2, LOW);
-        Giro_90grados_derecha();
+        xmotion.Right0(40, 1);
       }
       // Izquierda
       else if(Read_OS[0]){
-        digitalWrite(UserLed1, LOW);
-        digitalWrite(UserLed2, HIGH);
-        Giro_90grados_izquierda();
+        num_prop = 2.25;
+        Giro_izquierda(num_prop);
       }
       // No se encuentra ni en frente ni en los costados
       else{
-        xmotion.StopMotors(1);
+        if(ant_LD_OS){xmotion.Right0(10, 1);}
+        else{xmotion.Left0(10, 1);}
       }
     }
+    ant_LD_OS = Read_OS[1];
+    ant_RD_OS = Read_OS[3];
   }
+  xmotion.StopMotors(1);
 }
 
 // Funcion para cuando es: Centro.
@@ -153,33 +208,34 @@ void Frente_rapido(){
 }
 
 // Funcion para cuando es: Derecha-diagonal o Derecha-centrada
-void Giro_derecha(int num_prop){
-  int speed = num_prop*var_speed;
-  int left_speed = mean_speed + speed;
-  int rigth_speed = mean_speed - speed;
-  xmotion.MotorControl(left_speed, rigth_speed);
+void Giro_derecha(float num_prop){
+  speed = int(num_prop*var_speed);
+  left_speed = mean_speed + speed;
+  rigth_speed = mean_speed - speed;
+  xmotion.MotorControl(rigth_speed, left_speed);
 }
 
 // Funcion para cuando es: Izquierda-diagonal o Izquierda-centrada
-void Giro_izquierda(int num_prop){
-  int speed = num_prop*var_speed;
-  int left_speed = mean_speed - speed;
-  int rigth_speed = mean_speed + speed;
-  xmotion.MotorControl(left_speed, rigth_speed);
+void Giro_izquierda(float num_prop){
+  speed = int(num_prop*var_speed);
+  left_speed = mean_speed - speed;
+  rigth_speed = mean_speed + speed;
+  xmotion.MotorControl(rigth_speed, left_speed);
 }
 
 // Funcion para cuando es: Derecha
 void Giro_90grados_derecha(){
-  xmotion.Right0(40, delay_90grados);
+  xmotion.Right0(100, delay_90grados);
 }
 
 // Funcion para cuando es: Izquierda
 void Giro_90grados_izquierda(){
-  xmotion.Left0(40, delay_90grados);
+  xmotion.Left0(100, delay_90grados);
 }
 
 // Funcion para cuando ningun sensor detecta
 void Giro_180grados(){
-  xmotion.Right0(40, delay_180grados);
+  xmotion.Right0(100, delay_180grados);
 }
+
 
