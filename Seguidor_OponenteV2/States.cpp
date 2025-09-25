@@ -32,18 +32,24 @@ void States::update() {
     bool Read_OS[] = {L_OS.lectura(), LD_OS.lectura(), C_OS.lectura(), RD_OS.lectura(), R_OS.lectura()};
     bool Read_LS[] = {L_LS.lectura(), R_LS.lectura()};
 
-    bool no_oponente = !(Read_OS[1] && Read_OS[2] && Read_OS[3] && Read_OS[0] && Read_OS[4]);
-    
+    bool oponente = (Read_OS[1] || Read_OS[2] || Read_OS[3] || Read_OS[0] || Read_OS[4]);
+    bool centro = (Read_OS[2] && !Read_OS[0] && !Read_OS[1] && !Read_OS[3] && !Read_OS[4]);
+    bool centro_y_diagonales = (Read_OS[1] && Read_OS[2] && Read_OS[3])
+    bool centro_y_diagonal_izq = (Read_OS[1] && Read_OS[2]);
+    bool centro_y_diagonal_der = (Read_OS[2] && Read_OS[3]);
+    bool diagonal_izq = (Read_OS[0] && !Read_OS[1] && !Read_OS[2] && !Read_OS[3]);
+    bool diagonal_der = Read_OS[4]; 
+    bool izquierda_y_diagonal_izq = (Read_OS[0] && Read_OS[1]);
+    bool derecha_y_diagonal_der = (Read_OS[4] && Read_OS[3]);   
 
-
-    //Prioridad: línea (si no nos estan empujando)
-    if((Read_LS[0] || Read_LS[1]) && no_oponente){
+    //Prioridad: línea
+    if(Read_LS[0] || Read_LS[1]){
         estadoActual = DETEC_LINEA;
     } 
         switch (estadoActual) {
             case INICIO:
-                xmotion.StopMotors(1);
-                if (!no_oponente) {
+                //xmotion.StopMotors(1);
+                if (oponente) {
                     estadoActual = ALINEAR;
                 }else{
                     estadoActual = BUSCAR;
@@ -53,58 +59,43 @@ void States::update() {
             case BUSCAR:
                 if (millis() - tiempoBusquedaInicio < duracionBusqueda) {
                     xmotion.MotorControl(mean_speed, -mean_speed); //Gira para escanear
-                } else if (millis() - tiempoBusquedaInicio > duracionBusqueda) {
-                    // Si ha pasado el tiempo de búsqueda, girar 180 grados
-                    Giro_180grados();
+                } /*else if (millis() - tiempoBusquedaInicio < 2*duracionBusqueda) {
+                    xmotion.MotorControl(mean_speed, mean_speed); //Avanza para escanear
+                }*/ else {
                     tiempoBusquedaInicio = millis(); // Reiniciar el temporizador de búsqueda
-                } else {
-                    // Girar lentamente para buscar al oponente
-                    Giro_derecha(0.5); 
                 }
-                break;
-            case ALINEAR:
-                if (Read_OS[2] && !Read_OS[1] && !Read_OS[3]) {
-                    estadoActual = AVANZAR;
-                } else if (Read_OS[1] && !Read_OS[3]) {
-                    // Girar a la izquierda
-                    Giro_izquierda(1.0);
-                } else if (Read_OS[3] && !Read_OS[1]) {
-                    // Girar a la derecha
-                    Giro_derecha(1.0);
-                } else if (!no_oponente) {
-                    // Si no hay oponente, buscar
-                    estadoActual = BUSCAR;
-                    tiempoBusquedaInicio = millis();
+                
+                // Veriificar si se detecta el oponente
+                if (oponente) {
+                    estadoActual = ALINEAR;
                 }
                 break;
 
+            case ALINEAR:
+                // Centro
+                if(centro){
+                    estadoActual = AVANZAR;
+                }else if(centro_y_diagonal_izq || centro_y_diagonal_izq){
+                    xmotion.MotorControl(mean_speed, -mean_speed);
+                }else if(centro_y_diagonal_der  || centro_y_diagonal_der){
+                    xmotion.MotorControl(-mean_speed, mean_speed);
+                }else if(diagonal_izq){
+                    xmotion.MotorControl(fast_speed, -fast_speed);
+                }else if(diagonal_der){
+                    xmotion.MotorControl(-fast_speed, fast_speed);
+                }else {
+                    estadoActual = BUSCAR;
+                }              
+                
+                break;
+
             case AVANZAR:
-                if (!Read_OS[2]) {
-                    estadoActual = ALINEAR;
-                } else {
-                    Frente_rapido();
-                }
                 break;
 
 
 
             case DETEC_LINEA:
-                // Retrocede y gira 180°
-                MOTORS.MotorControl(-fast_speed, -fast_speed);
-                delay(350); // tiempo de retroceso
-                MOTORS.StopMotors(1);
-                if(Read_LS[0] && !Read_LS[1]){
-                    Giro_90grados_derecha();
-                }
-                else if(!Read_LS[0] && Read_LS[1]){
-                    Giro_90grados_izquierda();
-                }
-                else{
-                    Giro_180grados();
-                }
-                estadoActual = INICIO; // Volver al estado inicial después de evitar la línea
                 break;
-        
     }
 
 
