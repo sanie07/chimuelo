@@ -8,7 +8,8 @@
 //////////////////  PINES CON SUS OBJETOS A SER UTILIZADOS  //////////////////
 // Bandera:
 const int pin_flag = 4;
-Flag flag = Flag(pin_flag);
+//Flag flag = Flag(pin_flag);
+int close = 0;
 
 // Sensores Oponente:
 // Izquierda:
@@ -93,7 +94,8 @@ bool filtro(T &sensor, int n = FILTER_N){
 void setup() {
   //////////////////////////  INICIALIZAMOS LOS PINES  //////////////////////////
   // Bandera:
-  flag.begin();
+  //flag.begin();
+  pinMode(pin_flag, OUTPUT);
 
   // Sensores Oponente:
   L_OS.begin();
@@ -124,9 +126,17 @@ void setup() {
 
 void loop() {
   while(MS.get_start()){
-    // Leemos los sensores:
-    //bool Read_OS[] = {L_OS.lectura(), LD_OS.lectura(), C_OS.lectura(), RD_OS.lectura(), R_OS.lectura()};
-    //bool Read_LS[] = {L_LS.lectura(), R_LS.lectura()};
+    // Activamos la bandera
+    /*if(flag.get_abierto()){
+      flag.matador();
+    }*/
+    if(close == 0){
+      digitalWrite(pin_flag, HIGH);
+      delay(100);
+      digitalWrite(pin_flag, LOW);
+      close = 1;
+    }
+
     // Leemos sensores con filtro
     bool Read_OS[] = {
       filtro(L_OS), filtro(LD_OS), filtro(C_OS), filtro(RD_OS), filtro(R_OS)
