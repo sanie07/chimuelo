@@ -85,6 +85,7 @@ void Giro_izquierda(float num_prop);
 void Giro_90grados_derecha();
 void Giro_90grados_izquierda();
 void Giro_180grados();
+bool Oponente();
 
 // --- NUEVO: función filtro por mayoría ---
 template<typename T>
@@ -149,22 +150,41 @@ void loop() {
       L_LS_F, R_LS_F
     };
 
-    // --- PRIORIDAD: línea ---
-    if(Read_LS[0] || Read_LS[1]){
-      // Retrocede y gira 180°
-      xmotion.MotorControl(-fast_speed, -fast_speed);
-      delay(350); // tiempo de retroceso
-      xmotion.StopMotors(1);
-      if(Read_LS[0] && !Read_LS[1]){
-        Giro_90grados_derecha();
-      }
-      else if(!Read_LS[0] && Read_LS[1]){
-        Giro_90grados_izquierda();
+    // Sensor de Linea
+    if((Read_LS[0] && !Read_LS[1])){  // Si es solo el izquierdo
+      // Retrocede girando a la izquierda (rueda izquierda gira mas rapido que el derecho)
+      if(Oponente()){
+        xmotion.MotorControl(-10, -70);
+        delay(250); // tiempo de retroceso
+        xmotion.StopMotors(1);  // paramos
+        continue; // vuelve al inicio del loop
       }
       else{
-        Giro_180grados();
+        Giro_90grados_derecha();
+        xmotion.StopMotors(1);
+        continue;
       }
-      continue; // vuelve al inicio del loop
+    }
+    else if(!Read_LS[0] && Read_LS[1]){
+      // Retrocede girando a la derecha (rueda derecha gira mas rapido que el izquierdo)
+      if(Oponente()){
+        xmotion.MotorControl(-70, -10);
+        delay(250); // tiempo de retroceso
+        xmotion.StopMotors(1);  // paramos
+        continue; // vuelve al inicio del loop
+      }
+      else{
+        Giro_90grados_izquierda();
+        xmotion.StopMotors(1);
+        continue;
+      }
+    }
+    else if(Read_LS[0] && Read_LS[1]){
+      // Retrocede girando a la izquierda (rueda izquierda gira mas rapido que el derecho)
+      xmotion.MotorControl(-fast_speed, -fast_speed);
+      delay(500); // tiempo de retroceso
+      Giro_180grados();
+      continue;
     }
 
     // Centro
@@ -201,13 +221,11 @@ void loop() {
       }
       // Izquierda
       else if(Read_OS[0]){
-        num_prop = 2.25;
-        Giro_izquierda(num_prop);
+        xmotion.Left0(40, 1);
       }
       // No se encuentra ni en frente ni en los costados
       else{
-        if(ant_LD_OS){xmotion.Left0(10, 1);}
-        else{xmotion.Right0(10, 1);}
+        xmotion.Forward(20, 1);
       }
     }
     ant_LD_OS = Read_OS[1];
@@ -244,10 +262,14 @@ void Giro_90grados_derecha(){
 
 // Funcion para cuando es: Izquierda
 void Giro_90grados_izquierda(){
-  xmotion.Left0(100, delay_90grados);
+  xmotion.Left0(50, delay_90grados);
 }
 
 // Funcion para cuando ningun sensor detecta
 void Giro_180grados(){
-  xmotion.Right0(100, delay_180grados);
+  xmotion.Right0(50, delay_180grados);
+}
+
+bool Oponente(){
+  return (L_OS_F || LD_OS_F || C_OS_F || RD_OS_F || R_OS_F);
 }

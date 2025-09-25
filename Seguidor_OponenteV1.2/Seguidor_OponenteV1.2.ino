@@ -55,6 +55,7 @@ int delay_90grados = 19;
 int delay_180grados = delay_90grados*2;
 
 // Velocidades:
+int super_fast_speed = 150; // velocidad de ataque
 int fast_speed = 65;   // velocidad para el frente
 int mean_speed = 50;   // velocidad promedio de busqueda
 int var_speed = 18;    // velocidad variable de busqueda
@@ -67,20 +68,28 @@ float num_prop = 0;
 int prop = 0;
 
 //// Sensor Oponente:
-// Filtro: cantidad de lecturas a promediar
+// Filtro:
 const int FILTER_N = 3;
+int L_OS_F;
+int LD_OS_F;
+int C_OS_F;
+int RD_OS_F;
+int R_OS_F;
+int L_LS_F;
+int R_LS_F;
+// Valores anteriores:
 int ant_LD_OS = 0;
 int ant_RD_OS = 0;
 
 
 ///////////////////////////////  FUNCIONES  ////////////////////////////////
 void Frente_rapido();
+void Ataque();
 void Giro_derecha(float num_prop);
 void Giro_izquierda(float num_prop);
 void Giro_90grados_derecha();
 void Giro_90grados_izquierda();
 void Giro_180grados();
-bool No_oponente();
 
 // Filtramos las lecturas de los sensores para verificar que no sean falsas lecturas
 template<typename T>
@@ -127,6 +136,7 @@ void setup() {
 }
 
 void loop() {
+  // Si activamos el MicroStart
   while(MS.get_start()){
     // Activamos la bandera
     if(!flag.get_abierto()){
@@ -151,25 +161,34 @@ void loop() {
     };
 
     // Sensor de Linea
-    if((Read_LS[0] && No_Oponente()) || (Read_LS[1] && No_Oponente()) || ((Read_LS[0] && Read_LS[1]) && No_oponente())){
-      // Retrocede
-      xmotion.MotorControl(-fast_speed, -fast_speed);
-      delay(350); // tiempo de retroceso
+    if((Read_LS[0] && !Read_LS[1])){  // Si es solo el izquierdo
+      // Retrocede girando a la izquierda (rueda izquierda gira mas rapido que el derecho)
+      xmotion.MotorControl(-int(fast_speed/2), -fast_speed);
+      delay(85); // tiempo de retroceso
       xmotion.StopMotors(1);  // paramos
-      if(Read_LS[0] && !Read_LS[1]){
-        Giro_90grados_derecha();
-      }
-      else if(!Read_LS[0] && Read_LS[1]){
-        Giro_90grados_izquierda();
-      }
-      else{
-        Giro_180grados();
-      }
       continue; // vuelve al inicio del loop
     }
-
+    else if(!Read_LS[0] && Read_LS[1]){
+      // Retrocede girando a la derecha (rueda derecha gira mas rapido que el izquierdo)
+      xmotion.MotorControl(-fast_speed, -int(fast_speed/2));
+      delay(85); // tiempo de retroceso
+      xmotion.StopMotors(1);  // paramos
+      continue; // vuelve al inicio del loop
+    }
+    else if(Read_LS[0] && Read_LS[1]){
+      // Retrocede girando a la izquierda (rueda izquierda gira mas rapido que el derecho)
+      xmotion.MotorControl(-fast_speed, -fast_speed);
+      delay(85); // tiempo de retroceso
+      Giro_180grados();
+      continue;
+    }
+      
+    // Izquierda - Centro - Derecha: Ataque al Oponente
+    /*if(Read_OS[1] && Read_OS[2] && Read_OS[3]){
+      Ataque();
+    }*/
     // Centro
-    if(!Read_OS[1] && Read_OS[2] && !Read_OS[3] || Read_OS[1] && Read_OS[2] && Read_OS[3]){
+    else if(!Read_OS[1] && Read_OS[2] && !Read_OS[3] || Read_OS[1] && Read_OS[2] && Read_OS[3]){
       Frente_rapido();
     }
     // Derecha-centrado / Derecha-diagonal
@@ -190,7 +209,7 @@ void loop() {
     else if((!Read_OS[1] && !Read_OS[2] && !Read_OS[3])){
       // Derecha
       if(Read_OS[4]){
-        xmotion.Right0(40, 1);
+        xmotion.Right0(40, 10);
       }
       // Izquierda
       else if(Read_OS[0]){
@@ -199,27 +218,20 @@ void loop() {
       }
       // No se encuentra ni en frente ni en los costados
       else{
-        if(ant_LD_OS){xmotion.Right0(10, 3);}       // Ultimo sensor detectado fue el Izquierda-diagonal
-        else if(ant_RD_OS){xmotion.Left0(10, 3);}   // Ultimo sensor detectados fue el derecha-diagonal
-        else{
-          int cont = 0;
-          do{
-            if(cont == 0){
-              xmotion.Right0(20, 10);
-              cont = 1;
-            }
-            else{
-              xmotion.Left0(20, 10);
-              cont = 0;
-            } 
-          } while(!filtro(L_OS), !filtro(LD_OS), !filtro(C_OS), !filtro(RD_OS), !filtro(R_OS));
-        }
+        if(ant_LD_OS){xmotion.Right0(20, 5);}       // Ultimo sensor detectado fue el Izquierda-diagonal
+        else if(ant_RD_OS){xmotion.Left0(20, 5);}   // Ultimo sensor detectados fue el derecha-diagonal
+        else{xmotion.Right0(10, 1);}
       }
     }
     ant_LD_OS = Read_OS[1];
     ant_RD_OS = Read_OS[3];
   }
   xmotion.StopMotors(1);
+}
+
+// Funcion de Atauque
+void Ataque(){
+  xmotion.MotorControl(super_fast_speed, super_fast_speed);
 }
 
 // Funcion para cuando es: Centro.
@@ -258,7 +270,3 @@ void Giro_180grados(){
   xmotion.Right0(100, delay_180grados);
 }
 
-// Funcion para saber si detecta algun 
-bool No_oponente(){
-  return !(filtro(L_OS) || filtro(LD_OS) || filtro(C_OS) || filtro(RD_OS) || filtro(R_OS));
-}
