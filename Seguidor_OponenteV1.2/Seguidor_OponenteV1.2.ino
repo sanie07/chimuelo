@@ -80,8 +80,9 @@ void Giro_izquierda(float num_prop);
 void Giro_90grados_derecha();
 void Giro_90grados_izquierda();
 void Giro_180grados();
+bool No_oponente();
 
-// --- NUEVO: función filtro por mayoría ---
+// Filtramos las lecturas de los sensores para verificar que no sean falsas lecturas
 template<typename T>
 bool filtro(T &sensor, int n = FILTER_N){
   int suma = 0;
@@ -150,10 +151,10 @@ void loop() {
     };
 
     // Sensor de Linea
-    if(Read_LS[0] || Read_LS[1]){
+    if((Read_LS[0] && No_Oponente()) || (Read_LS[1] && No_Oponente()) || ((Read_LS[0] && Read_LS[1]) && No_oponente())){
       // Retrocede
       xmotion.MotorControl(-fast_speed, -fast_speed);
-      delay(90); // tiempo de retroceso
+      delay(350); // tiempo de retroceso
       xmotion.StopMotors(1);  // paramos
       if(Read_LS[0] && !Read_LS[1]){
         Giro_90grados_derecha();
@@ -189,11 +190,12 @@ void loop() {
     else if((!Read_OS[1] && !Read_OS[2] && !Read_OS[3])){
       // Derecha
       if(Read_OS[4]){
-        xmotion.Right0(40, 3);
+        xmotion.Right0(40, 1);
       }
       // Izquierda
       else if(Read_OS[0]){
-        xmotion.Left0(40, 3);
+        num_prop = 2.25;
+        Giro_izquierda(num_prop);
       }
       // No se encuentra ni en frente ni en los costados
       else{
@@ -256,3 +258,7 @@ void Giro_180grados(){
   xmotion.Right0(100, delay_180grados);
 }
 
+// Funcion para saber si detecta algun 
+bool No_oponente(){
+  return !(filtro(L_OS) || filtro(LD_OS) || filtro(C_OS) || filtro(RD_OS) || filtro(R_OS));
+}
