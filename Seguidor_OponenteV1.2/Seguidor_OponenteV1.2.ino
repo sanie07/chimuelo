@@ -10,6 +10,7 @@
 const int pin_flag = 4;
 Flag flag = Flag(pin_flag);
 
+
 // Sensores Oponente:
 // Izquierda:
 const int pin_L_OS = 0;
@@ -36,9 +37,11 @@ LS L_LS = LS(pin_L_LS);
 const int pin_R_LS = A2;
 LS R_LS = LS(pin_R_LS);
 
+
 // Sensor de MicroStart:
 const int pin_start = A0;
 MicroStart MS = MicroStart(pin_start);
+
 
 // LEDs:
 const int UserLed1 = 9;
@@ -124,6 +127,11 @@ void setup() {
 
 void loop() {
   while(MS.get_start()){
+    // Activamos la bandera
+    if(!flag.get_abierto()){
+      flag.matador();
+    }
+
     // Leemos sensores con filtro
     L_OS_F = filtro(L_OS);
     LD_OS_F = filtro(LD_OS);
@@ -141,12 +149,12 @@ void loop() {
       L_LS_F, R_LS_F
     };
 
-    // --- PRIORIDAD: línea ---
+    // Sensor de Linea
     if(Read_LS[0] || Read_LS[1]){
-      // Retrocede y gira 180°
+      // Retrocede
       xmotion.MotorControl(-fast_speed, -fast_speed);
-      delay(350); // tiempo de retroceso
-      xmotion.StopMotors(1);
+      delay(90); // tiempo de retroceso
+      xmotion.StopMotors(1);  // paramos
       if(Read_LS[0] && !Read_LS[1]){
         Giro_90grados_derecha();
       }
@@ -166,40 +174,44 @@ void loop() {
     // Derecha-centrado / Derecha-diagonal
     else if((!Read_OS[1] && Read_OS[2] && Read_OS[3]) || (!Read_OS[1] && !Read_OS[2] && Read_OS[3])){
       prop = 3-(int(Read_OS[2]) + int(Read_OS[3]));
-      if(prop == 2){
-        num_prop = 1.5;
-      }
-      else{
-        num_prop = 1;
-      }
+      if(prop == 2){num_prop = 1.5;}
+      else{num_prop = 1;}
       Giro_derecha(num_prop);
     }
     // Izquierda-centrado / Izquierda-diagonal
     else if((Read_OS[1] && Read_OS[2] && !Read_OS[3]) || (Read_OS[1] && !Read_OS[2] && !Read_OS[3])){
       prop = 3-(int(Read_OS[2]) + int(Read_OS[1]));
-      if(prop == 2){
-        num_prop = 1.5;
-      }
-      else{
-        num_prop = 1;
-      }
+      if(prop == 2){num_prop = 1.5;}
+      else{num_prop = 1;}
       Giro_izquierda(num_prop);
     }
     // No se encuentra en frente
     else if((!Read_OS[1] && !Read_OS[2] && !Read_OS[3])){
       // Derecha
       if(Read_OS[4]){
-        xmotion.Right0(40, 1);
+        xmotion.Right0(40, 3);
       }
       // Izquierda
       else if(Read_OS[0]){
-        num_prop = 2.25;
-        Giro_izquierda(num_prop);
+        xmotion.Left0(40, 3);
       }
       // No se encuentra ni en frente ni en los costados
       else{
-        if(ant_LD_OS){xmotion.Right0(10, 1);}
-        else{xmotion.Left0(10, 1);}
+        if(ant_LD_OS){xmotion.Right0(10, 3);}       // Ultimo sensor detectado fue el Izquierda-diagonal
+        else if(ant_RD_OS){xmotion.Left0(10, 3);}   // Ultimo sensor detectados fue el derecha-diagonal
+        else{
+          int cont = 0;
+          do{
+            if(cont == 0){
+              xmotion.Right0(20, 10);
+              cont = 1;
+            }
+            else{
+              xmotion.Left0(20, 10);
+              cont = 0;
+            } 
+          } while(!filtro(L_OS), !filtro(LD_OS), !filtro(C_OS), !filtro(RD_OS), !filtro(R_OS));
+        }
       }
     }
     ant_LD_OS = Read_OS[1];
@@ -243,3 +255,4 @@ void Giro_90grados_izquierda(){
 void Giro_180grados(){
   xmotion.Right0(100, delay_180grados);
 }
+
