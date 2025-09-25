@@ -4,6 +4,7 @@
 #include "LS.h"
 #include "Flag.h"
 #include "MicroStart.h"
+#include "States.h"
 
 //////////////////  PINES CON SUS OBJETOS A SER UTILIZADOS  //////////////////
 // Bandera:
@@ -44,6 +45,7 @@ LS R_LS = LS(pin_R_LS);
 
 MicroStart MS = MicroStart(pin_start);
 
+States estados = States(L_OS, LD_OS, C_OS, RD_OS, R_OS, L_LS, R_LS);
 
 ///////////////////////////////  FUNCIONES  ////////////////////////////////
 void Frente_rapido();
@@ -60,19 +62,11 @@ void setup() {
   // Bandera:
   flag.begin();
 
-  // Sensores Oponente:
-  L_OS.begin();
-  LD_OS.begin();
-  C_OS.begin();
-  RD_OS.begin();
-  R_OS.begin();
-
-  // Sensores de Linea:
-  L_LS.begin();
-  R_LS.begin();
-
   // Sensor MicroStart:
   MS.begin();
+
+  // Estados:
+  estados.begin();
 
   // LEDs:
   pinMode(UserLed1, OUTPUT);
@@ -89,7 +83,8 @@ void setup() {
 
 void loop() {
   while(MS.get_start()){
-
+    estados.update();
+  }
 
   xmotion.StopMotors(1);
 }
