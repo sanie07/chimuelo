@@ -133,6 +133,11 @@ void setup() {
 
 void loop() {
   while(MS.get_start()){
+    // Activamos la bandera
+    if(!flag.get_abierto()){
+      flag.matador();
+    }
+
     // Leemos sensores con filtro
     L_OS_F = filtro(L_OS);
     LD_OS_F = filtro(LD_OS);
