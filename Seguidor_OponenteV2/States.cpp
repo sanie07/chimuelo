@@ -12,10 +12,17 @@ int speed;
 int left_speed;
 int rigth_speed;
 
+// Giro
+int delay_90grados = 19;
+int delay_180grados = delay_90grados*2;
+
+// Tiempo
+unsigned long duracionBusqueda = 1000; 
+
 
 // Constructor de la clase States.
 States::States(OS& L_OS, OS& LD_OS, OS& C_OS, OS& RD_OS, OS& R_OS, LS& L_LS, LS& R_LS)
-    : L_OS(L_OS), LD_OS(LD_OS), C_OS(C_OS), RD_OS(RD_OS), R_OS(R_OS), L_LS(L_LS), R_LS(R_LS), estadoActual(INICIO), tiempoBusquedaInicio(0) {}
+    : L_OS(L_OS), LD_OS(LD_OS), C_OS(C_OS), RD_OS(RD_OS), R_OS(R_OS), L_LS(L_LS), R_LS(R_LS), estadoActual(INICIO), tiempoBusquedaInicio(millis()) {}
 
 void States::begin() {
     // Inicializa los pines de los sensores
@@ -36,7 +43,7 @@ void States::update() {
     //////////////////////////////////  CONDICIONALES  ////////////////////////////////
     bool oponente = (Read_OS[1] || Read_OS[2] || Read_OS[3] || Read_OS[0] || Read_OS[4]);
     bool centro = (Read_OS[2] && !Read_OS[0] && !Read_OS[1] && !Read_OS[3] && !Read_OS[4]);
-    bool centro_y_diagonales = (Read_OS[1] && Read_OS[2] && Read_OS[3])
+    bool centro_y_diagonales = (Read_OS[1] && Read_OS[2] && Read_OS[3]);
     
     // Giro medio
     bool centro_y_diagonal_izq = (Read_OS[1] && Read_OS[2] && !Read_OS[3]);
@@ -59,7 +66,6 @@ void States::update() {
     } 
         switch (estadoActual) {
             case INICIO:
-                //xmotion.StopMotors(1);
                 if (oponente) {
                     estadoActual = ALINEAR;
                 }else{
@@ -122,54 +128,23 @@ void States::update() {
             case DETEC_LINEA:
                 if(linea_izq && linea_der){
                 xmotion.MotorControl(-fast_speed, -0.6 * fast_speed);
-                delay(350); // tiempo de retroceso
+                delay(500); // tiempo de retroceso
                 xmotion.StopMotors(1);
                 }      
                 if(Read_LS[0] && !Read_LS[1]){
-                    Giro_90grados_derecha();
+                    xmotion.Right0(100, delay_90grados);
+                    estadoActual = INICIO;
                 }
                 else if(!Read_LS[0] && Read_LS[1]){
-                    Giro_90grados_izquierda();
+                    xmotion.Left0(100, delay_90grados);
+                    estadoActual = INICIO;
                 }
                 else{
-                    Giro_180grados();
+                    xmotion.Right0(100, delay_180grados);
+                    estadoActual = INICIO;
                 }
                 break;
     }
-
-
-// Funcion para cuando es: Centro.
-void Frente_rapido(){
-  xmotion.MotorControl(fast_speed, fast_speed);
 }
 
-// Funcion para cuando es: Derecha-diagonal o Derecha-centrada
-void Giro_derecha(float num_prop){
-  speed = int(num_prop*var_speed);
-  left_speed = mean_speed + speed;
-  rigth_speed = mean_speed - speed;
-  xmotion.MotorControl(rigth_speed, left_speed);
-}
 
-// Funcion para cuando es: Izquierda-diagonal o Izquierda-centrada
-void Giro_izquierda(float num_prop){
-  speed = int(num_prop*var_speed);
-  left_speed = mean_speed - speed;
-  rigth_speed = mean_speed + speed;
-  xmotion.MotorControl(rigth_speed, left_speed);
-}
-
-// Funcion para cuando es: Derecha
-void Giro_90grados_derecha(){
-  xmotion.Right0(100, delay_90grados);
-}
-
-// Funcion para cuando es: Izquierda
-void Giro_90grados_izquierda(){
-  xmotion.Left0(100, delay_90grados);
-}
-
-// Funcion para cuando ningun sensor detecta
-void Giro_180grados(){
-  xmotion.Right0(100, delay_180grados);
-}
