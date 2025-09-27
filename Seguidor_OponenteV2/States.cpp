@@ -41,7 +41,7 @@ void States::update() {
 
     //////////////////////////////////  CONDICIONALES  ////////////////////////////////
     bool oponente = (Read_OS[1] || Read_OS[2] || Read_OS[3] || Read_OS[0] || Read_OS[4]);
-    bool centro = (Read_OS[2] && !Read_OS[0] && !Read_OS[1] && !Read_OS[3] && !Read_OS[4]);
+    bool centro = (Read_OS[2] &&  !Read_OS[1] && !Read_OS[3]);
     bool centro_y_diagonales = (Read_OS[1] && Read_OS[2] && Read_OS[3]);
     
     // Giro medio
@@ -101,17 +101,16 @@ void States::update() {
                     xmotion.MotorControl(mean_speed, 0);
                 }else if(centro_y_diagonal_der  || solo_diagonal_der){
                     xmotion.MotorControl(0, mean_speed);
-                //Costados
 
+                //Costados
                 }else if(no_centro){
                     //Derecha
                     if(diagonal_der){
-                    xmotion.MotorControl(fast_speed, 0);}
-                    else if(diagonal_izq){
                     xmotion.MotorControl(0, fast_speed);}
-                    else{estadoActual = INICIO;}
+                    else if(diagonal_izq){
+                    xmotion.MotorControl(fast_speed, 0);}
                 }else {
-                    estadoActual = INICIO;
+                    estadoActual = BUSCAR;
                 }              
                 
                 break;
@@ -123,14 +122,15 @@ void States::update() {
                         estadoActual = ATAQUE_RAPIDO;
                     }
                 }else{
-                    estadoActual = INICIO;
+                    estadoActual = BUSCAR;
                 }
                 break;
             
             case ATAQUE_RAPIDO:
-                xmotion.MotorControl(max_speed, max_speed);
+                if(centro_y_diagonales){
+                xmotion.MotorControl(max_speed, max_speed);}
                 if(!centro_y_diagonales){
-                    estadoActual = INICIO;
+                    estadoActual = BUSCAR;
                 }
                 break;
 
@@ -143,7 +143,7 @@ void States::update() {
                     estadoActual = RETROCESO_LINEA_IZQUIERDA;}      
                 else if(linea_der && !linea_izq){
                     estadoActual = RETROCESO_LINEA_DERECHA;}
-                else {estadoActual = INICIO;}   
+                //else {estadoActual = INICIO;}   
                 break;
                 
 
