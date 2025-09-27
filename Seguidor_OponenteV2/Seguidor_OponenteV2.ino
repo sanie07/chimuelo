@@ -47,14 +47,6 @@ MicroStart MS = MicroStart(pin_start);
 
 States estados = States(L_OS, LD_OS, C_OS, RD_OS, R_OS, L_LS, R_LS);
 
-///////////////////////////////  FUNCIONES  ////////////////////////////////
-void Frente_rapido();
-void Giro_derecha(float num_prop);
-void Giro_izquierda(float num_prop);
-void Giro_90grados_derecha();
-void Giro_90grados_izquierda();
-void Giro_180grados();
-
 
 
 void setup() {
@@ -85,7 +77,7 @@ void loop() {
   while(MS.get_start()){
     estados.update();
   }
-
+  
   xmotion.StopMotors(1);
 }
 
