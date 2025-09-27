@@ -7,18 +7,22 @@
 #include "LS.h" // Incluye la cabecera de clase LS 
 
 enum Estado {
-    INICIO
+    INICIO,
     BUSCAR,
     ALINEAR,
     AVANZAR,
     ATAQUE_RAPIDO,
     DETEC_LINEA,
+    RETROCESO_LINEA,
+    RETROCESO_LINEA_DERECHA,
+    RETROCESO_LINEA_IZQUIERDA,
+    GIRO180,
 };
 
 
 class States {
 public:
-    States(OS& L_OS, OS& LD_OS, OS& C_OS, OS& RD_OS, OS& R_OS, LS& L_OS, LS& R_LS, xmotion& MOTORS);
+    States(OS& L_OS, OS& LD_OS, OS& C_OS, OS& RD_OS, OS& R_OS, LS& L_LS, LS& R_LS);
     void begin();
     void update();
 
@@ -28,9 +32,8 @@ private:
     OS& C_OS; 
     OS& RD_OS; 
     OS& R_OS; 
-    LS& L_OS; 
+    LS& L_LS; 
     LS& R_LS; 
-    xmotion& MOTORS;
     Estado estadoActual;
     unsigned long tiempoBusquedaInicio;
     const unsigned long duracionBusqueda = 1000;   
