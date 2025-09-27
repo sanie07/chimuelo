@@ -13,7 +13,7 @@ int rigth_speed;
 
 // Tiempo
 unsigned long duracionBusqueda = 1000; 
-unsigned long duracionGiro90 = 25; 
+unsigned long duracionGiro90 = 200; 
 unsigned long duracionGiro180 = duracionGiro90 *2; 
 unsigned long tiempoRetrocesoInicio;
 unsigned long tiempoGiro180Inicio;
@@ -66,133 +66,125 @@ void States::update() {
 
     //Prioridad: línea
     if(linea_izq || linea_der){
-        estadoActual = DETEC_LINEA;
+        tiempoRetrocesoInicio = millis();               // guardamos tiempo de inicio
+            if(linea_izq && linea_der){
+                estadoActual = RETROCESO_LINEA;} 
+            else if(linea_izq){
+                estadoActual = RETROCESO_LINEA_IZQUIERDA;}      
+            else if (linea_der){
+                estadoActual = RETROCESO_LINEA_DERECHA;}   
     } 
-        switch (estadoActual) {
-            case INICIO:
-                if (oponente) {
-                    estadoActual = ALINEAR;
-                }else{
-                    estadoActual = BUSCAR;
-                }
-                break;
 
-            case BUSCAR:
-                if (millis() - tiempoBusquedaInicio < duracionBusqueda) {
-                    xmotion.MotorControl(mean_speed, mean_speed); //Avanza para escanear
-                } else if (millis() - tiempoBusquedaInicio < 1.25*duracionBusqueda) {
-                    xmotion.MotorControl(mean_speed, -mean_speed); //Gira para escanear
-                } else {
-                    tiempoBusquedaInicio = millis(); // Reiniciar el temporizador de búsqueda
-                }
-                
-                // Veriificar si se detecta el oponente
-                if (oponente) {
-                    estadoActual = ALINEAR;
-                }
-                break;
-
-            case ALINEAR:
-                // Centro
-                if(centro || centro_y_diagonales){
-                    estadoActual = AVANZAR;
-                //diagonales y diagonales centradas
-                }else if(centro_y_diagonal_izq || solo_diagonal_izq){
-                    xmotion.MotorControl(mean_speed, 0);
-                }else if(centro_y_diagonal_der  || solo_diagonal_der){
-                    xmotion.MotorControl(0, mean_speed);
-
-                //Costados
-                }else if(no_centro){
-                    //Derecha
-                    if(diagonal_der){
-                    xmotion.MotorControl(0, fast_speed);}
-                    else if(diagonal_izq){
-                    xmotion.MotorControl(fast_speed, 0);}
-                }else {
-                    estadoActual = BUSCAR;
-                }              
-                
-                break;
-
-            case AVANZAR:
-                if(centro || centro_y_diagonales){
-                    xmotion.MotorControl(fast_speed, fast_speed);
-                    if(centro_y_diagonales){
-                        estadoActual = ATAQUE_RAPIDO;
-                    }
-                }else{
-                    estadoActual = BUSCAR;
-                }
-                break;
-            
-            case ATAQUE_RAPIDO:
-                if(centro_y_diagonales){
-                xmotion.MotorControl(max_speed, max_speed);}
-                if(!centro_y_diagonales){
-                    estadoActual = BUSCAR;
-                }
-                break;
-
-
-            case DETEC_LINEA:
-                tiempoRetrocesoInicio = millis();               // guardamos tiempo de inicio
-                if(linea_izq && linea_der){
-                    estadoActual = RETROCESO_LINEA;} 
-                else if(linea_izq && !linea_der){
-                    estadoActual = RETROCESO_LINEA_IZQUIERDA;}      
-                else if(linea_der && !linea_izq){
-                    estadoActual = RETROCESO_LINEA_DERECHA;}
-                //else {estadoActual = INICIO;}   
-                break;
-                
-
-            case RETROCESO_LINEA:
-                if (millis() - tiempoRetrocesoInicio < duracionRetroceso) {
-                    xmotion.MotorControl(-fast_speed, -fast_speed);  // retrocede y gira
-                }
-                else if (millis() - tiempoRetrocesoInicio >= duracionRetroceso) {
-                    xmotion.StopMotors(1); 
-                    tiempoGiro180Inicio = millis();   
-                    estadoActual = INICIO;  
-                }
-                break;
-
-            case RETROCESO_LINEA_IZQUIERDA:
-                if (millis() - tiempoRetrocesoInicio < duracionRetroceso) {
-                    xmotion.MotorControl(-0.5*fast_speed, -fast_speed);  // retrocede y gira a la derecha
-                }
-                else if (millis() - tiempoRetrocesoInicio >= duracionRetroceso) {
-                    xmotion.StopMotors(1);    
-                    estadoActual = INICIO;  
-                }
-                break;
-
-            case RETROCESO_LINEA_DERECHA:
-                if (millis() - tiempoRetrocesoInicio < duracionRetroceso) {
-                    xmotion.MotorControl(-fast_speed, -0.5*fast_speed);  // retrocede y gira a la izquierda
-                }
-                else if (millis() - tiempoRetrocesoInicio >= duracionRetroceso) {
-                    xmotion.StopMotors(1);    
-                    estadoActual = INICIO;  
-                }
-                break;
-
-            /*case GIRO180:
-                if (millis() - tiempoGiro180Inicio < duracionGiro180) {
-                    xmotion.MotorControl(-fast_speed, fast_speed); 
-                }
-                else if (millis() - tiempoGiro180Inicio  >= duracionGiro180) {
-                    xmotion.StopMotors(1);    
-                    estadoActual = INICIO;  
-                }
-                break;                
-            */
-
-            default:
-            estadoActual = INICIO;
+    switch (estadoActual) {
+        case INICIO:
+            if (oponente) {
+                estadoActual = ALINEAR;
+            }else{
+                estadoActual = BUSCAR;
+            }
             break;
-        }
+
+        case BUSCAR:
+            if (millis() - tiempoBusquedaInicio < duracionBusqueda) {
+                xmotion.MotorControl(mean_speed, mean_speed); //Avanza para escanear
+            } else if (millis() - tiempoBusquedaInicio < 1.25*duracionBusqueda) {
+                xmotion.MotorControl(mean_speed, -mean_speed); //Gira para escanear
+            } else {
+                tiempoBusquedaInicio = millis(); // Reiniciar el temporizador de búsqueda
+            }
+            
+            // Veriificar si se detecta el oponente
+            if (oponente) {
+                estadoActual = ALINEAR;
+            }
+            break;
+
+        case ALINEAR:
+            // Centro
+            if(centro || centro_y_diagonales){
+                estadoActual = AVANZAR;
+            //diagonales y diagonales centradas
+            }else if(centro_y_diagonal_izq || solo_diagonal_izq){
+                xmotion.MotorControl(mean_speed, 0);
+            }else if(centro_y_diagonal_der  || solo_diagonal_der){
+                xmotion.MotorControl(0, mean_speed);
+
+            //Costados
+            }else if(no_centro){
+                //Derecha
+                if(diagonal_der){
+                xmotion.MotorControl(0, fast_speed);}
+                else{
+                xmotion.MotorControl(fast_speed, 0);}
+            }else {
+                estadoActual = BUSCAR;
+            }              
+            
+            break;
+
+        case AVANZAR:
+            if(centro || centro_y_diagonales){
+                xmotion.MotorControl(fast_speed, fast_speed);
+                if(centro_y_diagonales){
+                    estadoActual = ATAQUE_RAPIDO;
+                }
+            }else{
+                estadoActual = BUSCAR;
+            }
+            break;
+        
+        case ATAQUE_RAPIDO:
+            if(centro_y_diagonales){
+            xmotion.MotorControl(max_speed, max_speed);}
+            else{
+                estadoActual = BUSCAR;
+            }
+            break;
+            
+
+        case RETROCESO_LINEA:
+            if (millis() - tiempoRetrocesoInicio < duracionRetroceso) {
+                xmotion.MotorControl(-fast_speed, -fast_speed);  // retrocede y gira
+            }
+            else {
+                tiempoGiro180Inicio = millis();   
+                estadoActual = GIRO180;  
+            }
+            break;
+
+        case RETROCESO_LINEA_IZQUIERDA:
+            if (millis() - tiempoRetrocesoInicio < duracionRetroceso) {
+                xmotion.MotorControl(-0.5*fast_speed, -fast_speed);  // retrocede y gira a la derecha
+            }
+            else{   
+                estadoActual = BUSCAR;  
+            }
+            break;
+
+        case RETROCESO_LINEA_DERECHA:
+            if (millis() - tiempoRetrocesoInicio < duracionRetroceso) {
+                xmotion.MotorControl(-fast_speed, -0.5*fast_speed);  // retrocede y gira a la izquierda
+            }
+            else {   
+                estadoActual = BUSCAR;  
+            }
+            break;
+
+        case GIRO180:
+            if (millis() - tiempoGiro180Inicio < duracionGiro180) {
+                xmotion.MotorControl(-mean_speed, mean_speed); 
+            }
+            else{
+                xmotion.StopMotors(1);    
+                estadoActual = BUSCAR;  
+            }
+            break;                
+        
+
+        default:
+        estadoActual = BUSCAR;
+        break;
+    }
 }
 
 
