@@ -57,6 +57,7 @@ private:
     const float Kp = 15.0;   
     float error = 99.0;
     const float pesos_sensores[5] = {-2.0, -1.5, 0.0, 1.5, 2.0};
+    const float UMBRAL_GIRO_RAPIDO = 1.7;
 };
 
 #endif

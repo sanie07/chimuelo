@@ -9,8 +9,8 @@
     int C_OS_F;
     int RD_OS_F;
     int R_OS_F;
-    int L_LS_F;
-    int R_LS_F;
+//    int L_LS_F;
+//    int R_LS_F;
 
 // --- Funcion filtro por mayoria ---
 template<typename T>
@@ -45,15 +45,15 @@ void States::update() {
     C_OS_F = filtro(C_OS);
     RD_OS_F = filtro(RD_OS);
     R_OS_F = filtro(R_OS);
-    L_LS_F = filtro(L_LS);
-    R_LS_F = filtro(R_LS);
+    //L_LS_F = filtro(L_LS);
+    //R_LS_F = filtro(R_LS);
 
     // Ubicamos esas lecturas dentro de vectores
     bool Read_OS[] = {
       L_OS_F, LD_OS_F, C_OS_F, RD_OS_F, R_OS_F
     };
     bool Read_LS[] = {
-      L_LS_F, R_LS_F
+      L_LS.lectura(), R_LS.lectura()
     };
 
     //////////////////////////////////  CONDICIONALES  ////////////////////////////////
@@ -143,20 +143,30 @@ void States::update() {
                 estadoActual = ATAQUE_RAPIDO;
                 break; // Salimos para ejecutar ATAQUE_RAPIDO en el siguiente ciclo
             }
-
-            // 3. Volver a BUSCAR si se pierde el oponente
+                //Transicion a BUSCAR si no encuentra
             if (error == 99) {
                 estadoActual = BUSCAR;
                 break;
             }
-
-            // 4. Aplicar Control P (si no está centrado ni perdido)
-            float correccion = Kp * error;
-            int velocidad_base = fast_speed;
-            int velocidad_izquierda = constrain(velocidad_base + correccion, -100, 100);
-            int velocidad_derecha = constrain(velocidad_base - correccion, -100, 100);
-
-            xmotion.MotorControl(velocidad_izquierda, velocidad_derecha);
+            // 3. ¡NUEVA LÓGICA HÍBRIDA!
+            // Si el error es muy grande, usamos el MODO GIRO RÁPIDO
+            if (abs(error) > UMBRAL_GIRO_RAPIDO) {
+                if (error > 0) { // Oponente a la derecha
+                    // Pivotar rápidamente a la derecha
+                    xmotion.MotorControl(-fast_speed, fast_speed);
+                } else { // Oponente a la izquierda
+                    // Pivotar rápidamente a la izquierda
+                    xmotion.MotorControl(fast_speed, -fast_speed);
+                }
+            } 
+            // Si el error es pequeño o mediano, usamos el MODO AJUSTE FINO (Control P)
+            else {
+                float correccion = Kp * error;
+                int velocidad_base = fast_speed;
+                int velocidad_izquierda = constrain(velocidad_base + correccion, -100, 100);
+                int velocidad_derecha = constrain(velocidad_base - correccion, -100, 100);
+                xmotion.MotorControl(velocidad_izquierda, velocidad_derecha);
+            }
             break;
         }            
         
