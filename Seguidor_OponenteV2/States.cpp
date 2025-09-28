@@ -117,45 +117,43 @@ void States::update() {
             }
             break;
 
-        case ALINEAR:
-            // Centro
-            if(centro || centro_y_diagonales){
-                estadoActual = AVANZAR;
-            //diagonales y diagonales centradas
-            }else if(centro_y_diagonal_izq || solo_diagonal_izq){
-                xmotion.MotorControl(mean_speed, 0);
-            }else if(centro_y_diagonal_der  || solo_diagonal_der){
-                xmotion.MotorControl(0, mean_speed);
-
-            //Costados
-            }else if(no_centro){
-                //Derecha
-                if(diagonal_der){
-                xmotion.MotorControl(0, fast_speed);}
-                else{
-                xmotion.MotorControl(fast_speed, 0);}
-            }else {
-                estadoActual = BUSCAR;
-            }              
+    case ALINEAR: {
             
-            break;
+            // 1. Calcular el Error 
+            error = 99;
+            if (diagonal_izq) error = -2;
+            else if (solo_diagonal_izq) error = -1;
+            else if (centro || centro_y_diagonales) error = 0;
+            else if (solo_diagonal_der) error = 1;
+            else if (diagonal_der) error = 2;
 
-        case AVANZAR:
-            if(centro || centro_y_diagonales){
-                xmotion.MotorControl(fast_speed, fast_speed);
-                if(centro_y_diagonales){
-                    estadoActual = ATAQUE_RAPIDO;
-                }
-            }else{
-                estadoActual = BUSCAR;
+            // 2. Transición a ATAQUE_RAPIDO si está centrado
+            if (centro_y_diagonales) {
+                estadoActual = ATAQUE_RAPIDO;
+                break; // Salimos para ejecutar ATAQUE_RAPIDO en el siguiente ciclo
             }
+
+            // 3. Volver a BUSCAR si se pierde el oponente
+            if (error == 99) {
+                estadoActual = BUSCAR;
+                break;
+            }
+
+            // 4. Aplicar Control P (si no está centrado ni perdido)
+            int correccion = Kp * error;
+            int velocidad_base = fast_speed;
+            int velocidad_izquierda = constrain(velocidad_base + correccion, -100, 100);
+            int velocidad_derecha = constrain(velocidad_base - correccion, -100, 100);
+
+            xmotion.MotorControl(velocidad_izquierda, velocidad_derecha);
             break;
+        }            
         
         case ATAQUE_RAPIDO:
             if(centro_y_diagonales){
             xmotion.MotorControl(max_speed, max_speed);}
             else{
-                estadoActual = BUSCAR;
+                estadoActual = ALINEAR;
             }
             break;
             

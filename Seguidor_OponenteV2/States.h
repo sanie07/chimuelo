@@ -10,13 +10,13 @@ enum Estado {
     INICIO,
     BUSCAR,
     ALINEAR,
-    AVANZAR,
     ATAQUE_RAPIDO,
     DETEC_LINEA,
     RETROCESO_LINEA,
     RETROCESO_LINEA_DERECHA,
     RETROCESO_LINEA_IZQUIERDA,
     GIRO180,
+    //MANIOBRA_STALL,
 };
 
 
@@ -42,9 +42,9 @@ private:
     unsigned long tiempoGiro180Inicio;
 
     // --- Parametros de comportamiento
-    const int max_speed = 70;
-    const int fast_speed = 50;
-    const int mean_speed = 20;
+    const int max_speed = 100;
+    const int fast_speed = 65;
+    const int mean_speed = 50;
     int left_speed;
     int rigth_speed;
 
@@ -52,7 +52,10 @@ private:
     const unsigned long duracionGiro90 = 200; 
     const unsigned long duracionGiro180 = duracionGiro90 * 2; 
     const unsigned long duracionRetroceso = 500;
-
+   
+    //Parametros del contol P
+    const float Kp = 15.0;   
+    int error = 99;
 };
 
 #endif
