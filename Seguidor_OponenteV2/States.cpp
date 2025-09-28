@@ -118,17 +118,28 @@ void States::update() {
             break;
 
     case ALINEAR: {
-            
-            // 1. Calcular el Error 
-            error = 99;
-            if (diagonal_izq) error = -2;
-            else if (solo_diagonal_izq) error = -1;
-            else if (centro || centro_y_diagonales) error = 0;
-            else if (solo_diagonal_der) error = 1;
-            else if (diagonal_der) error = 2;
+                    
+            // 1. CALCULAR EL ERROR (Método de Promedio Ponderado)
+            float suma_pesos = 0.0;
+            int sensores_activos = 0;
+
+            for (int i = 0; i < 5; i++) {
+                if (Read_OS[i]) {
+                    suma_pesos += pesos_sensores[i];
+                    sensores_activos++;
+                }
+            }
+
+            // Si se detectó al menos un sensor, calcula el promedio.
+            if (sensores_activos > 0) {
+                error = suma_pesos / sensores_activos;
+            } else {
+                // Si no, el oponente está perdido.
+                error = 99.0;
+            }
 
             // 2. Transición a ATAQUE_RAPIDO si está centrado
-            if (centro_y_diagonales) {
+            if ((abs(error) < 0.5)) {
                 estadoActual = ATAQUE_RAPIDO;
                 break; // Salimos para ejecutar ATAQUE_RAPIDO en el siguiente ciclo
             }
@@ -140,7 +151,7 @@ void States::update() {
             }
 
             // 4. Aplicar Control P (si no está centrado ni perdido)
-            int correccion = Kp * error;
+            float correccion = Kp * error;
             int velocidad_base = fast_speed;
             int velocidad_izquierda = constrain(velocidad_base + correccion, -100, 100);
             int velocidad_derecha = constrain(velocidad_base - correccion, -100, 100);
@@ -150,7 +161,7 @@ void States::update() {
         }            
         
         case ATAQUE_RAPIDO:
-            if(centro_y_diagonales){
+            if(abs(error) < 0.5){
             xmotion.MotorControl(max_speed, max_speed);}
             else{
                 estadoActual = ALINEAR;
@@ -188,7 +199,7 @@ void States::update() {
 
         case GIRO180:
             if (millis() - tiempoGiro180Inicio < duracionGiro180) {
-                xmotion.MotorControl(-mean_speed, mean_speed); 
+                xmotion.MotorControl(-fast_speed, fast_speed); 
             }
             else{
                 xmotion.StopMotors(1);    

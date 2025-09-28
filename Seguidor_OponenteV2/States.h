@@ -49,13 +49,14 @@ private:
     int rigth_speed;
 
     const unsigned long duracionBusqueda = 1000; 
-    const unsigned long duracionGiro90 = 200; 
+    const unsigned long duracionGiro90 = 300; 
     const unsigned long duracionGiro180 = duracionGiro90 * 2; 
-    const unsigned long duracionRetroceso = 500;
+    const unsigned long duracionRetroceso = 300;
    
     //Parametros del contol P
     const float Kp = 15.0;   
-    int error = 99;
+    float error = 99.0;
+    const float pesos_sensores[5] = {-2.0, -1.5, 0.0, 1.5, 2.0};
 };
 
 #endif
