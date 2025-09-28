@@ -245,7 +245,7 @@ void Frente_rapido(){
   int cont = 0;
   do{
     if((10*cont)<255){
-      xmotion.MotorControl(mean_speed + 10*cont, mean_speed + 10*cont);
+      xmotion.MotorControl(medium_speed + 10*cont, medium_speed + 10*cont);
       cont++;
     }
     else if((10*cont) >= 255 && cont < 5000){
