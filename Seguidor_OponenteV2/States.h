@@ -42,15 +42,13 @@ private:
     unsigned long tiempoGiro180Inicio;
 
     // --- Parametros de comportamiento
-    const int max_speed = 100;
-    const int fast_speed = 65;
-    const int mean_speed = 50;
+    int test_speed;
     int left_speed;
     int rigth_speed;
 
     const unsigned long duracionBusqueda = 1000; 
     const unsigned long duracionGiro90 = 300; 
-    const unsigned long duracionGiro180 = duracionGiro90 * 2; 
+    unsigned long duracionGiro180; 
     const unsigned long duracionRetroceso = 300;
    
     //Parametros del contol P
