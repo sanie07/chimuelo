@@ -118,11 +118,37 @@ void States::update() {
             break;
 
     case ALINEAR: {
+            // 1. Calcular el Error 
+            error = 99;
+            if (diagonal_izq) error = -2;
+            else if (solo_diagonal_izq) error = -1;
+            else if (centro || centro_y_diagonales) error = 0;
+            else if (solo_diagonal_der) error = 1;
+            else if (diagonal_der) error = 2;
+
+            // 2. Transición a ATAQUE_RAPIDO si está centrado
+            if (centro_y_diagonales) {
+                estadoActual = ATAQUE_RAPIDO;
+                break; // Salimos para ejecutar ATAQUE_RAPIDO en el siguiente ciclo
+            }
+
+            // 3. Volver a BUSCAR si se pierde el oponente
+            if (error == 99) {
+                estadoActual = BUSCAR;
+                break;
+            }
+
+            // 4. Aplicar Control P (si no está centrado ni perdido)
+            correccion = Kp * error;
+            left_speed = constrain(base_speed + correccion, -100, 100);
+            right_speed = constrain(base_speed - correccion, -100, 100);
+            xmotion.MotorControl(right_speed, left_speed);
+            break;
                     
         }            
         
         case ATAQUE_RAPIDO:
-            if(abs(error) < 0.5){
+            if(centro_y_diagonales){
             xmotion.MotorControl(max_speed, max_speed);}
             else{
                 estadoActual = ALINEAR;
