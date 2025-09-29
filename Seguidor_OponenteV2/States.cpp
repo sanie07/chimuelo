@@ -9,8 +9,8 @@
     int C_OS_F;
     int RD_OS_F;
     int R_OS_F;
-    int L_LS_F;
-    int R_LS_F;
+//    int L_LS_F;
+//    int R_LS_F;
 
 // --- Funcion filtro por mayoria ---
 template<typename T>
@@ -45,15 +45,15 @@ void States::update() {
     C_OS_F = filtro(C_OS);
     RD_OS_F = filtro(RD_OS);
     R_OS_F = filtro(R_OS);
-    L_LS_F = filtro(L_LS);
-    R_LS_F = filtro(R_LS);
+    //L_LS_F = filtro(L_LS);
+    //R_LS_F = filtro(R_LS);
 
     // Ubicamos esas lecturas dentro de vectores
     bool Read_OS[] = {
       L_OS_F, LD_OS_F, C_OS_F, RD_OS_F, R_OS_F
     };
     bool Read_LS[] = {
-      L_LS_F, R_LS_F
+      L_LS.lectura(), R_LS.lectura()
     };
 
     //////////////////////////////////  CONDICIONALES  ////////////////////////////////
@@ -103,9 +103,9 @@ void States::update() {
 
         case BUSCAR:
             if (millis() - tiempoBusquedaInicio < duracionBusqueda) {
-                xmotion.MotorControl(mean_speed, mean_speed); //Avanza para escanear
+                xmotion.MotorControl(base_speed, base_speed); //Avanza para escanear
             } //else if (millis() - tiempoBusquedaInicio < 1.25*duracionBusqueda) {
-                //xmotion.MotorControl(mean_speed, -mean_speed); //Gira para escanear
+                //xmotion.MotorControl(base_speed, -base_speed); //Gira para escanear
             //} 
             else {
                 tiempoBusquedaInicio = millis(); // Reiniciar el temporizador de búsqueda
@@ -117,62 +117,76 @@ void States::update() {
             }
             break;
 
-        case ALINEAR:
-            // Centro
+    case ALINEAR: {
+
+            float error = 99.0;
+
             if(centro || centro_y_diagonales){
-                estadoActual = AVANZAR;
+                estadoActual = ATAQUE_RAPIDO;
+                tiempoInicioAtaque = millis();
+                break;
             //diagonales y diagonales centradas
             }else if(centro_y_diagonal_izq || solo_diagonal_izq){
-                xmotion.MotorControl(mean_speed, 0);
+                error = -1.5;
             }else if(centro_y_diagonal_der  || solo_diagonal_der){
-                xmotion.MotorControl(0, mean_speed);
+                error = 1.5;
 
             //Costados
             }else if(no_centro){
                 //Derecha
                 if(diagonal_der){
-                xmotion.MotorControl(0, fast_speed);}
+                    xmotion.MotorControl(-base_speed, base_speed);}
                 else{
-                xmotion.MotorControl(fast_speed, 0);}
-            }else {
+                    xmotion.MotorControl(base_speed, -base_speed);}
+                break;
+            }
+
+            if (error == 99.0) {
                 estadoActual = BUSCAR;
-            }              
-            
+                break;
+            }
+
+            // 4. Aplicar Control P (si no está centrado ni perdido)
+            float correccion = Kp * error; // Usamos float para el cálculo
+            int left_speed = constrain(base_speed + correccion, -100, 100);
+            int right_speed = constrain(base_speed - correccion, -100, 100); 
+            xmotion.MotorControl(left_speed, right_speed);
             break;
 
-        case AVANZAR:
-            if(centro || centro_y_diagonales){
-                xmotion.MotorControl(fast_speed, fast_speed);
-                if(centro_y_diagonales){
-                    estadoActual = ATAQUE_RAPIDO;
-                }
-            }else{
-                estadoActual = BUSCAR;
-            }
-            break;
+                    
+        }            
         
         case ATAQUE_RAPIDO:
-            if(centro_y_diagonales){
-            xmotion.MotorControl(max_speed, max_speed);}
-            else{
-                estadoActual = BUSCAR;
+            if(centro || centro_y_diagonales){
+                unsigned long tiempoTranscurrido = millis() - tiempoInicioAtaque;
+
+                if(tiempoTranscurrido < duracionRampa){
+                    int velocidadActual = map(tiempoTranscurrido, 0, duracionRampa, base_speed, max_speed);
+                    xmotion.MotorControl(velocidadActual, velocidadActual);                    
+                }else {
+                    xmotion.MotorControl(max_speed, max_speed);
+                }
+                
+            }else{
+                estadoActual = ALINEAR;
             }
             break;
             
 
         case RETROCESO_LINEA:
             if (millis() - tiempoRetrocesoInicio < duracionRetroceso) {
-                xmotion.MotorControl(-fast_speed, -fast_speed);  // retrocede y gira
+                xmotion.MotorControl(-base_speed, -base_speed);  // retrocede 
             }
             else {
+                xmotion.StopMotors(1);
                 tiempoGiro180Inicio = millis();   
                 estadoActual = GIRO180;  
             }
             break;
 
         case RETROCESO_LINEA_IZQUIERDA:
-            if (millis() - tiempoRetrocesoInicio < duracionRetroceso) {
-                xmotion.MotorControl(-0.5*fast_speed, -fast_speed);  // retrocede y gira a la derecha
+            if (millis() - tiempoRetrocesoInicio < duracionRetrocesoDeLado) {
+                xmotion.MotorControl(-0.2*base_speed, -base_speed);  // retrocede y gira a la derecha
             }
             else{   
                 estadoActual = BUSCAR;  
@@ -180,8 +194,8 @@ void States::update() {
             break;
 
         case RETROCESO_LINEA_DERECHA:
-            if (millis() - tiempoRetrocesoInicio < duracionRetroceso) {
-                xmotion.MotorControl(-fast_speed, -0.5*fast_speed);  // retrocede y gira a la izquierda
+            if (millis() - tiempoRetrocesoInicio < duracionRetrocesoDeLado) {
+                xmotion.MotorControl(-base_speed, -0.2*base_speed);  // retrocede y gira a la izquierda
             }
             else {   
                 estadoActual = BUSCAR;  
@@ -190,7 +204,7 @@ void States::update() {
 
         case GIRO180:
             if (millis() - tiempoGiro180Inicio < duracionGiro180) {
-                xmotion.MotorControl(-mean_speed, mean_speed); 
+                xmotion.MotorControl(-base_speed, base_speed); 
             }
             else{
                 xmotion.StopMotors(1);    
