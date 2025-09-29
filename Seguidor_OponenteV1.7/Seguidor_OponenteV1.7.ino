@@ -53,10 +53,10 @@ int delay_180grados = delay_90grados*2;
 
 // Velocidades:
 int super_fast_speed = 255; // velocidad enfrentado
-int fast_speed = 200;   // velocidad para el frente
-int medium_speed = 150; // velocidad para el frente
-int mean_speed = 100;   // velocidad promedio de busqueda
-int var_speed = 30;     // velocidad variable de busqueda
+int fast_speed = 150;       // velocidad para el frente
+int medium_speed = 100;     // velocidad para el frente
+int mean_speed = 80;        // velocidad promedio de busqueda
+int var_speed = 20;         // velocidad variable de busqueda
 int speed;
 int left_speed;
 int rigth_speed;
@@ -89,7 +89,9 @@ void Giro_90grados_izquierda();   // izquierda dependiendo si es el sensor L_OS
 void Giro_180grados();   // caso de sensor de linea
 void Inicio_STRGY0();    // DIPSWITCH en 000
 //---- no hacemos nada   // DIPSWITCH en 001
-void Inicio_STRGY2();    // DIPSWITCH en 011
+void Inicio_STRGY2();    // DIPSWITCH en 010
+void Inicio_STRGY3();    // DIPSWITCH en 011
+void Inicio_STRGY4();    // DIPSWITCH en 100
 
 // --- NUEVO: función filtro por mayoría ---
 template<typename T>
@@ -134,7 +136,8 @@ void setup() {
   for(int i=0;i<5;i++){
     xmotion.ToggleLeds(100);
   }
-
+  
+  // Para el random:
   randomSeed(micros());
 
 }
@@ -143,17 +146,49 @@ void loop() {
   while(MS.get_start()){
     // Estrategias:
     if(close == 0){
-      if(!digitalRead(DIP_SW0)){
-        if(!digitalRead(DIP_SW1)){  // si es 011
-          Inicio_STRGY2();  // inicio de esquivo, esquivo, leo tus derechos
-        }
-        // si es 001 no hacemos nada
+      bool strategy0 = (digitalRead(DIP_SW0) && digitalRead(DIP_SW1) && digitalRead(DIP_SW2));
+      bool strategy2 = (digitalRead(DIP_SW0) && !digitalRead(DIP_SW1) && digitalRead(DIP_SW2));
+      bool strategy3 = (!digitalRead(DIP_SW0) && !digitalRead(DIP_SW1) && digitalRead(DIP_SW2));
+      bool strategy4 = (digitalRead(DIP_SW0) && digitalRead(DIP_SW1) && !digitalRead(DIP_SW2));
+
+      if(strategy0){
+        Inicio_STRGY0();
       }
-      else{
-        // si es 000
-        Inicio_STRGY0();  // inicio de prueba
+      else if(strategy2){
+        Inicio_STRGY2();
       }
+      else if(strategy3){
+        Inicio_STRGY3();
+      }
+      else if(strategy4){
+        Inicio_STRGY4();
+      }
+      
       close = 1; 
+    }
+
+    // Sensor de Linea
+    if((L_LS.lectura() && !R_LS.lectura())){  // Si es solo el izquierdo
+      // Retrocede girando a la izquierda (rueda izquierda gira mas rapido que el derecho)
+      xmotion.MotorControl(-int(0.08*fast_speed), -fast_speed);
+      delay(200);
+      xmotion.StopMotors(1);
+      continue;
+    }
+    else if(!L_LS.lectura() && R_LS.lectura()){
+      // Retrocede girando a la derecha (rueda derecha gira mas rapido que el izquierdo)
+      xmotion.MotorControl(-fast_speed, -int(0.08*fast_speed));
+      delay(200);
+      xmotion.StopMotors(1);
+      continue;
+    }
+    else if(L_LS.lectura() && R_LS.lectura()){
+      // Retrocede girando a la izquierda (rueda izquierda gira mas rapido que el derecho)
+      xmotion.MotorControl(-fast_speed, -fast_speed);
+      delay(300); // tiempo de retroceso
+      xmotion.StopMotors(1);
+      Giro_180grados();
+      continue;
     }
 
     // Leemos sensores con filtro
@@ -162,40 +197,10 @@ void loop() {
     C_OS_F = filtro(C_OS);
     RD_OS_F = filtro(RD_OS);
     R_OS_F = filtro(R_OS);
-    L_LS_F = filtro(L_LS);
-    R_LS_F = filtro(R_LS);
 
-    // Ubicamos esas lecturas dentro de vectores
     bool Read_OS[] = {
       L_OS_F, LD_OS_F, C_OS_F, RD_OS_F, R_OS_F
     };
-    bool Read_LS[] = {
-      L_LS_F, R_LS_F
-    };
-
-    // Sensor de Linea
-    if((Read_LS[0] && !Read_LS[1])){  // Si es solo el izquierdo
-      // Retrocede girando a la izquierda (rueda izquierda gira mas rapido que el derecho)
-      xmotion.MotorControl(-int(0.1*super_fast_speed), -super_fast_speed);
-      delay(100);
-      xmotion.StopMotors(1);
-      continue;
-    }
-    else if(!Read_LS[0] && Read_LS[1]){
-      // Retrocede girando a la derecha (rueda derecha gira mas rapido que el izquierdo)
-      xmotion.MotorControl(-super_fast_speed, -int(0.1*super_fast_speed));
-      delay(100);
-      xmotion.StopMotors(1);
-      continue;
-    }
-    else if(Read_LS[0] && Read_LS[1]){
-      // Retrocede girando a la izquierda (rueda izquierda gira mas rapido que el derecho)
-      xmotion.MotorControl(-super_fast_speed, -super_fast_speed);
-      delay(250); // tiempo de retroceso
-      xmotion.StopMotors(1);
-      Giro_180grados();
-      continue;
-    }
 
     // Centro
     if(!Read_OS[1] && Read_OS[2] && !Read_OS[3] || Read_OS[1] && Read_OS[2] && Read_OS[3]){
@@ -205,10 +210,10 @@ void loop() {
     else if((!Read_OS[1] && Read_OS[2] && Read_OS[3]) || (!Read_OS[1] && !Read_OS[2] && Read_OS[3])){
       prop = 3-(int(Read_OS[2]) + int(Read_OS[3]));
       if(prop == 2){
-        num_prop = 2.5;
+        num_prop = 2.25;
       }
       else{
-        num_prop = 1.5;
+        num_prop = 1;
       }
       Giro_derecha(num_prop);
     }
@@ -216,7 +221,7 @@ void loop() {
     else if((Read_OS[1] && Read_OS[2] && !Read_OS[3]) || (Read_OS[1] && !Read_OS[2] && !Read_OS[3])){
       prop = 3-(int(Read_OS[2]) + int(Read_OS[1]));
       if(prop == 2){
-        num_prop = 2;
+        num_prop = 2.25;
       }
       else{
         num_prop = 1;
@@ -227,15 +232,15 @@ void loop() {
     else if((!Read_OS[1] && !Read_OS[2] && !Read_OS[3])){
       // Derecha
       if(Read_OS[4]){
-        xmotion.Right0(60, 1);
+        xmotion.Right0(40, 1);
       }
       // Izquierda
       else if(Read_OS[0]){
-        xmotion.Left0(60, 1);
+        xmotion.Left0(40, 1);
       }
       // No se encuentra ni en frente ni en los costados
       else{
-        xmotion.MotorControl(120,150);
+        xmotion.MotorControl(60,75);
       }
     }
   }
@@ -246,11 +251,11 @@ void loop() {
 void Frente_rapido(){
   int cont = 0;
   do{
-    if((10*cont)<255){
-      xmotion.MotorControl(medium_speed + 10*cont, medium_speed + 10*cont);
+    if((25*cont)<255){
+      xmotion.MotorControl(medium_speed + 25*cont, medium_speed + 25*cont);
       cont++;
     }
-    else if((10*cont) >= 255 && cont < 5000){
+    else if((25*cont) >= 255 && cont < 4000){
       xmotion.MotorControl(super_fast_speed, super_fast_speed);
       cont++;
     }
@@ -315,17 +320,25 @@ void Inicio_STRGY0(){
 // Funcion para el inicio de la estrategia del retroceso
 void Inicio_STRGY2(){
   if(random(0,2) == 0){
-    xmotion.MotorControl(-super_fast_speed, -2); // izquierda
+    xmotion.MotorControl(-fast_speed, -10); // izquierda
   } else {
-    xmotion.MotorControl(-2, -super_fast_speed); // derecha
+    xmotion.MotorControl(-10, -fast_speed); // derecha
   }
-  delay(250);
-  xmotion.MotorControl(-super_fast_speed, -super_fast_speed);
-  delay(100);
+  delay(110);
+
+  xmotion.MotorControl(-fast_speed, -fast_speed);
+  delay(200);
+
+  // Al terminar, recien empieza la lógica normal
 }
 
-// Funcion para el inicio de la estrategia del giro 180
 void Inicio_STRGY3(){
-
+  xmotion.Right0(80, 140);
 }
+
+void Inicio_STRGY4(){
+  xmotion.Backward(80, 150);
+  xmotion.Left0(80, 150);
+}
+
 

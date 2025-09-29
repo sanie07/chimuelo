@@ -89,7 +89,9 @@ void Giro_90grados_izquierda();   // izquierda dependiendo si es el sensor L_OS
 void Giro_180grados();   // caso de sensor de linea
 void Inicio_STRGY0();    // DIPSWITCH en 000
 //---- no hacemos nada   // DIPSWITCH en 001
-void Inicio_STRGY2();    // DIPSWITCH en 011
+void Inicio_STRGY2();    // DIPSWITCH en 010
+void Inicio_STRGY3();    // DIPSWITCH en 011
+void Inicio_STRGY4();    // DIPSWITCH en 100
 
 // --- NUEVO: función filtro por mayoría ---
 template<typename T>
@@ -134,7 +136,8 @@ void setup() {
   for(int i=0;i<5;i++){
     xmotion.ToggleLeds(100);
   }
-
+  
+  // Para el random:
   randomSeed(micros());
 
 }
@@ -143,17 +146,50 @@ void loop() {
   while(MS.get_start()){
     // Estrategias:
     if(close == 0){
-      if(!digitalRead(DIP_SW0)){
-        if(!digitalRead(DIP_SW1)){  // si es 011
-          Inicio_STRGY2();  // inicio de esquivo, esquivo, leo tus derechos
-        }
-        // si es 001 no hacemos nada
+      bool strategy0 = (digitalRead(DIP_SW0) && digitalRead(DIP_SW1) && digitalRead(DIP_SW2));
+      bool strategy2 = (digitalRead(DIP_SW0) && !digitalRead(DIP_SW1) && digitalRead(DIP_SW2));
+      bool strategy3 = (!digitalRead(DIP_SW0) && !digitalRead(DIP_SW1) && digitalRead(DIP_SW2));
+      bool strategy4 = (digitalRead(DIP_SW0) && digitalRead(DIP_SW1) && !digitalRead(DIP_SW2));
+
+      if(strategy0){
+        Inicio_STRGY0();
+      }
+      else if(strategy2){
+        Inicio_STRGY2();
+      }
+      else if(strategy3){
+        Inicio_STRGY3();
+      }
+      /*else if(strategy4){
+        Inicio_STRGY4();
+      }*/
+      
+      close = 1; 
+    }
+
+    // Sensor de Linea
+    // Línea detectada con prioridad absoluta
+    if(L_LS.lectura() || R_LS.lectura()){
+      // Retrocede fuerte recto
+      xmotion.MotorControl(-super_fast_speed, -super_fast_speed);
+      delay(200);
+
+      // Decide giro según lado activado
+      if(L_LS.lectura() && !R_LS.lectura()){
+        // Línea izquierda → gira derecha
+        xmotion.MotorControl(-super_fast_speed, -5);
+        delay(150);
+      }
+      else if(!L_LS.lectura() && R_LS.lectura()){
+        // Línea derecha → gira izquierda
+        xmotion.MotorControl(-5, -super_fast_speed);
+        delay(150);
       }
       else{
-        // si es 000
-        Inicio_STRGY0();  // inicio de prueba
+        // Ambos sensores → giro 180
+        Giro_180grados();
       }
-      close = 1; 
+      continue; // no sigas con sensores de oponente
     }
 
     // Leemos sensores con filtro
@@ -162,40 +198,10 @@ void loop() {
     C_OS_F = filtro(C_OS);
     RD_OS_F = filtro(RD_OS);
     R_OS_F = filtro(R_OS);
-    L_LS_F = filtro(L_LS);
-    R_LS_F = filtro(R_LS);
 
-    // Ubicamos esas lecturas dentro de vectores
     bool Read_OS[] = {
       L_OS_F, LD_OS_F, C_OS_F, RD_OS_F, R_OS_F
     };
-    bool Read_LS[] = {
-      L_LS_F, R_LS_F
-    };
-
-    // Sensor de Linea
-    if((Read_LS[0] && !Read_LS[1])){  // Si es solo el izquierdo
-      // Retrocede girando a la izquierda (rueda izquierda gira mas rapido que el derecho)
-      xmotion.MotorControl(-int(0.1*super_fast_speed), -super_fast_speed);
-      delay(100);
-      xmotion.StopMotors(1);
-      continue;
-    }
-    else if(!Read_LS[0] && Read_LS[1]){
-      // Retrocede girando a la derecha (rueda derecha gira mas rapido que el izquierdo)
-      xmotion.MotorControl(-super_fast_speed, -int(0.1*super_fast_speed));
-      delay(100);
-      xmotion.StopMotors(1);
-      continue;
-    }
-    else if(Read_LS[0] && Read_LS[1]){
-      // Retrocede girando a la izquierda (rueda izquierda gira mas rapido que el derecho)
-      xmotion.MotorControl(-super_fast_speed, -super_fast_speed);
-      delay(250); // tiempo de retroceso
-      xmotion.StopMotors(1);
-      Giro_180grados();
-      continue;
-    }
 
     // Centro
     if(!Read_OS[1] && Read_OS[2] && !Read_OS[3] || Read_OS[1] && Read_OS[2] && Read_OS[3]){
@@ -315,17 +321,24 @@ void Inicio_STRGY0(){
 // Funcion para el inicio de la estrategia del retroceso
 void Inicio_STRGY2(){
   if(random(0,2) == 0){
-    xmotion.MotorControl(-super_fast_speed, -2); // izquierda
+    xmotion.MotorControl(-super_fast_speed, -5); // izquierda
   } else {
-    xmotion.MotorControl(-2, -super_fast_speed); // derecha
+    xmotion.MotorControl(-5, -super_fast_speed); // derecha
   }
   delay(250);
+
   xmotion.MotorControl(-super_fast_speed, -super_fast_speed);
-  delay(100);
+  delay(150);
+
+  // Al terminar, recien empieza la lógica normal
 }
 
-// Funcion para el inicio de la estrategia del giro 180
 void Inicio_STRGY3(){
-
+  xmotion.Right0(super_fast_speed, 110);
 }
+
+/*void Inicio_STRGY4(){
+  xmotion.Backward(byte speed, int time)
+}*/
+
 
