@@ -43,21 +43,18 @@ private:
 
     // --- Parametros de comportamiento
     const int max_speed = 100;
-    const int fast_speed = 65;
-    const int mean_speed = 50;
+    const int base_speed = 50;
     int left_speed;
     int rigth_speed;
 
     const unsigned long duracionBusqueda = 1000; 
-    const unsigned long duracionGiro90 = 300; 
+    const unsigned long duracionGiro90 = 112.5; 
     const unsigned long duracionGiro180 = duracionGiro90 * 2; 
-    const unsigned long duracionRetroceso = 300;
+    const unsigned long duracionRetroceso = 200;
    
     //Parametros del contol P
     const float Kp = 15.0;   
     float error = 99.0;
-    const float pesos_sensores[5] = {-2.0, -1.5, 0.0, 1.5, 2.0};
-    const float UMBRAL_GIRO_RAPIDO = 1.7;
 };
 
 #endif
