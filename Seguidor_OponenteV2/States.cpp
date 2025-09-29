@@ -118,39 +118,56 @@ void States::update() {
             break;
 
     case ALINEAR: {
-            // 1. Calcular el Error 
-            error = 99;
-            if (diagonal_izq) error = -2;
-            else if (solo_diagonal_izq) error = -1;
-            else if (centro || centro_y_diagonales) error = 0;
-            else if (solo_diagonal_der) error = 1;
-            else if (diagonal_der) error = 2;
 
-            // 2. Transición a ATAQUE_RAPIDO si está centrado
-            if (centro_y_diagonales) {
+            float error = 99.0;
+
+            if(centro || centro_y_diagonales){
                 estadoActual = ATAQUE_RAPIDO;
-                break; // Salimos para ejecutar ATAQUE_RAPIDO en el siguiente ciclo
+                tiempoInicioAtaque = millis();
+                break;
+            //diagonales y diagonales centradas
+            }else if(centro_y_diagonal_izq || solo_diagonal_izq){
+                error = -1.5;
+            }else if(centro_y_diagonal_der  || solo_diagonal_der){
+                error = 1.5;
+
+            //Costados
+            }else if(no_centro){
+                //Derecha
+                if(diagonal_der){
+                    xmotion.MotorControl(-base_speed, base_speed);}
+                else{
+                    xmotion.MotorControl(base_speed, -base_speed);}
+                break;
             }
 
-            // 3. Volver a BUSCAR si se pierde el oponente
-            if (error == 99) {
+            if (error == 99.0) {
                 estadoActual = BUSCAR;
                 break;
             }
 
             // 4. Aplicar Control P (si no está centrado ni perdido)
-            correccion = Kp * error;
-            left_speed = constrain(base_speed + correccion, -100, 100);
-            right_speed = constrain(base_speed - correccion, -100, 100);
-            xmotion.MotorControl(right_speed, left_speed);
+            float correccion = Kp * error; // Usamos float para el cálculo
+            int left_speed = constrain(base_speed + correccion, -100, 100);
+            int right_speed = constrain(base_speed - correccion, -100, 100); 
+            xmotion.MotorControl(left_speed, right_speed);
             break;
+
                     
         }            
         
         case ATAQUE_RAPIDO:
-            if(centro_y_diagonales){
-            xmotion.MotorControl(max_speed, max_speed);}
-            else{
+            if(centro || centro_y_diagonales){
+                unsigned long tiempoTranscurrido = millis() - tiempoInicioAtaque;
+
+                if(tiempoTranscurrido < duracionRampa){
+                    int velocidadActual = map(tiempoTranscurrido, 0, duracionRampa, base_speed, max_speed);
+                    xmotion.MotorControl(velocidadActual, velocidadActual);                    
+                }else {
+                    xmotion.MotorControl(max_speed, max_speed);
+                }
+                
+            }else{
                 estadoActual = ALINEAR;
             }
             break;
@@ -158,16 +175,17 @@ void States::update() {
 
         case RETROCESO_LINEA:
             if (millis() - tiempoRetrocesoInicio < duracionRetroceso) {
-                xmotion.MotorControl(-base_speed, -base_speed);  // retrocede y gira
+                xmotion.MotorControl(-base_speed, -base_speed);  // retrocede 
             }
             else {
+                xmotion.StopMotors(1);
                 tiempoGiro180Inicio = millis();   
                 estadoActual = GIRO180;  
             }
             break;
 
         case RETROCESO_LINEA_IZQUIERDA:
-            if (millis() - tiempoRetrocesoInicio < duracionRetroceso) {
+            if (millis() - tiempoRetrocesoInicio < duracionRetrocesoDeLado) {
                 xmotion.MotorControl(-0.2*base_speed, -base_speed);  // retrocede y gira a la derecha
             }
             else{   
@@ -176,7 +194,7 @@ void States::update() {
             break;
 
         case RETROCESO_LINEA_DERECHA:
-            if (millis() - tiempoRetrocesoInicio < duracionRetroceso) {
+            if (millis() - tiempoRetrocesoInicio < duracionRetrocesoDeLado) {
                 xmotion.MotorControl(-base_speed, -0.2*base_speed);  // retrocede y gira a la izquierda
             }
             else {   

@@ -40,22 +40,19 @@ private:
     unsigned long tiempoBusquedaInicio;
     unsigned long tiempoRetrocesoInicio;
     unsigned long tiempoGiro180Inicio;
-
+    unsigned long tiempoInicioAtaque;
     // --- Parametros de comportamiento
     const int max_speed = 100;
     const int base_speed = 50;
 
     const unsigned long duracionBusqueda = 1000; 
-    const unsigned long duracionGiro90 = 112.5; 
+    const unsigned long duracionGiro90 = 150; 
     const unsigned long duracionGiro180 = duracionGiro90 * 2; 
-    const unsigned long duracionRetroceso = 200;
-   
+    const unsigned long duracionRetroceso = 800;
+    const unsigned long duracionRetrocesoDeLado = 500;
+    const unsigned long duracionRampa = 150;
     //Parametros del contol P
-    const float Kp = 15.0;   
-    int error = 99;
-    int correccion = 0;
-    int left_speed = base_speed;
-    int rigth_speed = base_speed;
+    const float Kp = 18.0;   
 
 };
 
