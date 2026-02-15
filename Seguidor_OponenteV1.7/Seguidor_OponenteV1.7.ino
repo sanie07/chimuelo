@@ -92,6 +92,7 @@ void Inicio_STRGY0();    // DIPSWITCH en 000
 void Inicio_STRGY2();    // DIPSWITCH en 010
 void Inicio_STRGY3();    // DIPSWITCH en 011
 void Inicio_STRGY4();    // DIPSWITCH en 100
+void Inicio_STRGY5();    // DIPSWITCH en 101
 
 // --- NUEVO: función filtro por mayoría ---
 template<typename T>
@@ -136,20 +137,20 @@ void setup() {
   for(int i=0;i<5;i++){
     xmotion.ToggleLeds(100);
   }
-  
-  // Para el random:
-  randomSeed(micros());
-
 }
 
 void loop() {
   while(MS.get_start()){
+    // Para el random:
+    randomSeed(micros());
+
     // Estrategias:
     if(close == 0){
       bool strategy0 = (digitalRead(DIP_SW0) && digitalRead(DIP_SW1) && digitalRead(DIP_SW2));
       bool strategy2 = (digitalRead(DIP_SW0) && !digitalRead(DIP_SW1) && digitalRead(DIP_SW2));
       bool strategy3 = (!digitalRead(DIP_SW0) && !digitalRead(DIP_SW1) && digitalRead(DIP_SW2));
       bool strategy4 = (digitalRead(DIP_SW0) && digitalRead(DIP_SW1) && !digitalRead(DIP_SW2));
+      bool strategy5 = (!digitalRead(DIP_SW0) && digitalRead(DIP_SW1) && !digitalRead(DIP_SW2));
 
       if(strategy0){
         Inicio_STRGY0();
@@ -162,6 +163,9 @@ void loop() {
       }
       else if(strategy4){
         Inicio_STRGY4();
+      }
+      else if(strategy5){
+        Inicio_STRGY5();
       }
       
       close = 1; 
@@ -240,7 +244,7 @@ void loop() {
       }
       // No se encuentra ni en frente ni en los costados
       else{
-        xmotion.MotorControl(60,75);
+        xmotion.MotorControl(75,95);
       }
     }
   }
@@ -252,16 +256,16 @@ void Frente_rapido(){
   int cont = 0;
   do{
     if((25*cont)<255){
-      xmotion.MotorControl(medium_speed + 25*cont, medium_speed + 25*cont);
+      xmotion.MotorControl(((fast_speed + 25*cont)-35), (fast_speed + 25*cont));
       cont++;
     }
     else if((25*cont) >= 255 && cont < 4000){
-      xmotion.MotorControl(super_fast_speed, super_fast_speed);
+      xmotion.MotorControl((super_fast_speed-35), super_fast_speed);
       cont++;
     }
     else{
       xmotion.MotorControl(-int(0.1*fast_speed), -fast_speed);
-      delay(100);
+      delay(200);
       cont = 26;
     }
   } while(filtro(LD_OS) && filtro(C_OS) && filtro(RD_OS) && MS.get_start());
@@ -318,27 +322,27 @@ void Inicio_STRGY0(){
 }
 
 // Funcion para el inicio de la estrategia del retroceso
-void Inicio_STRGY2(){
-  if(random(0,2) == 0){
-    xmotion.MotorControl(-fast_speed, -10); // izquierda
-  } else {
-    xmotion.MotorControl(-10, -fast_speed); // derecha
-  }
-  delay(110);
-
+void Inicio_STRGY2(){  
+  xmotion.MotorControl(-10, -fast_speed); // derecha
+  delay(80);
   xmotion.MotorControl(-fast_speed, -fast_speed);
-  delay(200);
-
+  delay(215);
   // Al terminar, recien empieza la lógica normal
 }
-
+//estrategia 180°
 void Inicio_STRGY3(){
-  xmotion.Right0(80, 140);
+  xmotion.Right0(80, 150);
+}
+//estrategia RUN izquierda
+void Inicio_STRGY4(){
+  xmotion.Backward(100, 200);
+  xmotion.Left0(100, 184);
 }
 
-void Inicio_STRGY4(){
-  xmotion.Backward(80, 150);
-  xmotion.Left0(80, 150);
+//estrategia RUN derecha
+void Inicio_STRGY5(){
+  xmotion.MotorControl(255, 230);
+  delay(40);
 }
 
 

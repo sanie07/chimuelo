@@ -53,10 +53,10 @@ int delay_180grados = delay_90grados*2;
 
 // Velocidades:
 int super_fast_speed = 255; // velocidad enfrentado
-int fast_speed = 200;   // velocidad para el frente
-int medium_speed = 150; // velocidad para el frente
-int mean_speed = 100;   // velocidad promedio de busqueda
-int var_speed = 30;     // velocidad variable de busqueda
+int fast_speed = 150;       // velocidad para el frente
+int medium_speed = 100;     // velocidad para el frente
+int mean_speed = 80;        // velocidad promedio de busqueda
+int var_speed = 20;         // velocidad variable de busqueda
 int speed;
 int left_speed;
 int rigth_speed;
@@ -92,6 +92,7 @@ void Inicio_STRGY0();    // DIPSWITCH en 000
 void Inicio_STRGY2();    // DIPSWITCH en 010
 void Inicio_STRGY3();    // DIPSWITCH en 011
 void Inicio_STRGY4();    // DIPSWITCH en 100
+void Inicio_STRGY5();    // DIPSWITCH en 101
 
 // --- NUEVO: función filtro por mayoría ---
 template<typename T>
@@ -150,6 +151,7 @@ void loop() {
       bool strategy2 = (digitalRead(DIP_SW0) && !digitalRead(DIP_SW1) && digitalRead(DIP_SW2));
       bool strategy3 = (!digitalRead(DIP_SW0) && !digitalRead(DIP_SW1) && digitalRead(DIP_SW2));
       bool strategy4 = (digitalRead(DIP_SW0) && digitalRead(DIP_SW1) && !digitalRead(DIP_SW2));
+      bool strategy5 = (!digitalRead(DIP_SW0) && digitalRead(DIP_SW1) && !digitalRead(DIP_SW2));
 
       if(strategy0){
         Inicio_STRGY0();
@@ -160,36 +162,38 @@ void loop() {
       else if(strategy3){
         Inicio_STRGY3();
       }
-      /*else if(strategy4){
+      else if(strategy4){
         Inicio_STRGY4();
-      }*/
+      }
+      else if(strategy5){
+        Inicio_STRGY5();
+      }
       
       close = 1; 
     }
 
     // Sensor de Linea
-    // Línea detectada con prioridad absoluta
-    if(L_LS.lectura() || R_LS.lectura()){
-      // Retrocede fuerte recto
-      xmotion.MotorControl(-super_fast_speed, -super_fast_speed);
+    if((L_LS.lectura() && !R_LS.lectura())){  // Si es solo el izquierdo
+      // Retrocede girando a la izquierda (rueda izquierda gira mas rapido que el derecho)
+      xmotion.MotorControl(-int(0.08*fast_speed), -fast_speed);
       delay(200);
-
-      // Decide giro según lado activado
-      if(L_LS.lectura() && !R_LS.lectura()){
-        // Línea izquierda → gira derecha
-        xmotion.MotorControl(-super_fast_speed, -5);
-        delay(150);
-      }
-      else if(!L_LS.lectura() && R_LS.lectura()){
-        // Línea derecha → gira izquierda
-        xmotion.MotorControl(-5, -super_fast_speed);
-        delay(150);
-      }
-      else{
-        // Ambos sensores → giro 180
-        Giro_180grados();
-      }
-      continue; // no sigas con sensores de oponente
+      xmotion.StopMotors(1);
+      continue;
+    }
+    else if(!L_LS.lectura() && R_LS.lectura()){
+      // Retrocede girando a la derecha (rueda derecha gira mas rapido que el izquierdo)
+      xmotion.MotorControl(-fast_speed, -int(0.08*fast_speed));
+      delay(200);
+      xmotion.StopMotors(1);
+      continue;
+    }
+    else if(L_LS.lectura() && R_LS.lectura()){
+      // Retrocede girando a la izquierda (rueda izquierda gira mas rapido que el derecho)
+      xmotion.MotorControl(-fast_speed, -fast_speed);
+      delay(300); // tiempo de retroceso
+      xmotion.StopMotors(1);
+      Giro_180grados();
+      continue;
     }
 
     // Leemos sensores con filtro
@@ -211,10 +215,10 @@ void loop() {
     else if((!Read_OS[1] && Read_OS[2] && Read_OS[3]) || (!Read_OS[1] && !Read_OS[2] && Read_OS[3])){
       prop = 3-(int(Read_OS[2]) + int(Read_OS[3]));
       if(prop == 2){
-        num_prop = 2.5;
+        num_prop = 2.25;
       }
       else{
-        num_prop = 1.5;
+        num_prop = 1;
       }
       Giro_derecha(num_prop);
     }
@@ -222,7 +226,7 @@ void loop() {
     else if((Read_OS[1] && Read_OS[2] && !Read_OS[3]) || (Read_OS[1] && !Read_OS[2] && !Read_OS[3])){
       prop = 3-(int(Read_OS[2]) + int(Read_OS[1]));
       if(prop == 2){
-        num_prop = 2;
+        num_prop = 2.25;
       }
       else{
         num_prop = 1;
@@ -233,15 +237,16 @@ void loop() {
     else if((!Read_OS[1] && !Read_OS[2] && !Read_OS[3])){
       // Derecha
       if(Read_OS[4]){
-        xmotion.Right0(60, 1);
+        xmotion.Right0(40, 1);
       }
       // Izquierda
       else if(Read_OS[0]){
-        xmotion.Left0(60, 1);
+        xmotion.Left0(40, 1);
       }
       // No se encuentra ni en frente ni en los costados
       else{
-        xmotion.MotorControl(120,150);
+        // 
+        xmotion.MotorControl(75,75);
       }
     }
   }
@@ -252,11 +257,11 @@ void loop() {
 void Frente_rapido(){
   int cont = 0;
   do{
-    if((10*cont)<255){
-      xmotion.MotorControl(medium_speed + 10*cont, medium_speed + 10*cont);
+    if((25*cont)<255){
+      xmotion.MotorControl(medium_speed + 25*cont, medium_speed + 25*cont);
       cont++;
     }
-    else if((10*cont) >= 255 && cont < 5000){
+    else if((25*cont) >= 255 && cont < 4000){
       xmotion.MotorControl(super_fast_speed, super_fast_speed);
       cont++;
     }
@@ -321,24 +326,31 @@ void Inicio_STRGY0(){
 // Funcion para el inicio de la estrategia del retroceso
 void Inicio_STRGY2(){
   if(random(0,2) == 0){
-    xmotion.MotorControl(-super_fast_speed, -5); // izquierda
+    xmotion.MotorControl(-fast_speed, -10); // izquierda
   } else {
-    xmotion.MotorControl(-5, -super_fast_speed); // derecha
+    xmotion.MotorControl(-10, -fast_speed); // derecha
   }
-  delay(250);
+  delay(15);
 
-  xmotion.MotorControl(-super_fast_speed, -super_fast_speed);
-  delay(150);
+  xmotion.MotorControl(-fast_speed, -fast_speed);
+  delay(215);
 
   // Al terminar, recien empieza la lógica normal
 }
-
+//estrategia 180°
 void Inicio_STRGY3(){
-  xmotion.Right0(super_fast_speed, 110);
+  xmotion.Right0(80, 120);
+}
+//estrategia RUN izquierda
+void Inicio_STRGY4(){
+  xmotion.Backward(80, 225);
+  xmotion.Left0(80, 150);
 }
 
-/*void Inicio_STRGY4(){
-  xmotion.Backward(byte speed, int time)
-}*/
+//estrategia RUN derecha
+void Inicio_STRGY5(){
+  xmotion.Backward(80, 190);
+  xmotion.Right0(80, 150);
+}
 
 
